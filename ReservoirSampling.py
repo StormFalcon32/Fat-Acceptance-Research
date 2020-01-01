@@ -3,6 +3,18 @@ import pandas as pd
 import csv
 
 
+def removePreviousSelected():
+    previous = []
+    with open(r'D:\Python\FatAcceptance\Selected.csv') as f:
+        reader = csv.reader(f)
+        line = 0
+        for row in reader:
+            if line != 0:
+                previous.append(int(row[1]))
+            line += 1
+        return previous
+
+
 def selectKItems(stream, k, n):
     i = 0
     reservoir = [0] * k
@@ -19,10 +31,13 @@ def selectKItems(stream, k, n):
 def main():
     csvIn = pd.read_csv(r'D:\Python\FatAcceptance\NoDups.csv')
     df = csvIn.to_dict('index')
+    previous = removePreviousSelected()
     indices = []
     for i in range(0, len(df)):
+        if i in previous:
+            continue
         indices.append(i)
-    selected_indices = selectKItems(indices, 100, len(df))
+    selected_indices = selectKItems(indices, 100, len(indices))
     selected = []
     for i in range(0, len(selected_indices)):
         subselected = []
@@ -32,7 +47,7 @@ def main():
         subselected.append(df[selected_indices[i]]['text'])
         subselected.append('')
         selected.append(subselected)
-    with open(r'D:\Python\FatAcceptance\Selected.csv', 'w', newline='') as f:
+    with open(r'D:\Python\FatAcceptance\Selected2.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['num', 'orig_ind', 'id', 'text', 'label'])
         writer.writerows(selected)
