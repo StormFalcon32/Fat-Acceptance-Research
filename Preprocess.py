@@ -44,7 +44,7 @@ def lemmatize(tokenized_sentences, nlp):
 def main():
     nlp = spacy.load('en', disable=['parser', 'ner'])
     stop_words = set(stopwords.words('english'))
-    csvIn = pd.read_csv(r'D:\Python\GamingDisorder\NoDups.csv')
+    csvIn = pd.read_csv(r'D:\Python\FatAcceptance\NoDups.csv')
     df = csvIn.to_dict('index')
     new = []
     for i in range(0, len(df)):
@@ -55,7 +55,7 @@ def main():
     data_words = list(to_words(new))
     data_words = list(remove_stopwords(data_words, stop_words))
     data_words = list(lemmatize(data_words, nlp))
-    with open(r'D:\Python\GamingDisorder\Lemmatized.csv', 'w', newline='') as f:
+    with open(r'D:\Python\FatAcceptance\Lemmatized.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerows(data_words)
 
