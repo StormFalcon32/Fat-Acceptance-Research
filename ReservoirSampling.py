@@ -41,15 +41,13 @@ def main():
     selected = []
     for i in range(0, len(selected_indices)):
         subselected = []
-        subselected.append(i)
-        subselected.append(selected_indices[i])
         subselected.append(df[selected_indices[i]]['id'])
         subselected.append(df[selected_indices[i]]['text'])
         subselected.append('')
         selected.append(subselected)
     with open(r'D:\Python\FatAcceptance\Selected2.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow(['num', 'orig_ind', 'id', 'text', 'label'])
+        writer.writerow(['id', 'text', 'label'])
         writer.writerows(selected)
 
 

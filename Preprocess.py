@@ -44,7 +44,7 @@ def lemmatize(tokenized_sentences, nlp):
 def main():
     nlp = spacy.load('en', disable=['parser', 'ner'])
     stop_words = set(stopwords.words('english'))
-    csvIn = pd.read_csv(r'D:\Python\FatAcceptance\NoDups.csv')
+    csvIn = pd.read_csv(r'D:\Python\FatAcceptance\OldDataset\Selected1Convert.csv')
     df = csvIn.to_dict('index')
     new = []
     for i in range(0, len(df)):
