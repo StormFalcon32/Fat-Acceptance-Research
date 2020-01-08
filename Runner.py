@@ -9,7 +9,7 @@ if __name__ == '__main__':
     increment = 2
     runs = [1, 1, 0, 0]
     if runs[0]:
-        preprocess.main()
+        preprocess.main(True)
     if runs[1]:
         ngrams.main()
     if runs[2]:

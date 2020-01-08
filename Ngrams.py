@@ -9,7 +9,7 @@ def make_trigrams(tokenized_sentences, trigram_mod, bigram_mod):
 
 def main():
     data_words = []
-    with open(r'D:\Python\FatAcceptance\Lemmatized.csv') as f:
+    with open(r'D:\Python\FatAcceptance\LemmatizedDup.csv') as f:
         reader = csv.reader(f)
         for row in reader:
             data_words.append(row)
@@ -21,7 +21,7 @@ def main():
     bigram_mod = gensim.models.phrases.Phraser(bigram)
     trigram_mod = gensim.models.phrases.Phraser(trigram)
     data_words = list(make_trigrams(data_words, trigram_mod, bigram_mod))
-    with open(r'D:\Python\FatAcceptance\Texts.csv', 'w', newline='') as f:
+    with open(r'D:\Python\FatAcceptance\TextsDup.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerows(data_words)
 

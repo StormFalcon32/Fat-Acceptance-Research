@@ -41,24 +41,47 @@ def lemmatize(tokenized_sentences, nlp):
         yield(lemmatized)
 
 
-def main():
+def main(entire):
     nlp = spacy.load('en', disable=['parser', 'ner'])
     stop_words = set(stopwords.words('english'))
-    csvIn = pd.read_csv(r'D:\Python\FatAcceptance\OldDataset\Selected1Convert.csv')
+    csvIn = None
+    numFile = 0
+    if entire:
+        csvIn = pd.read_csv(r'D:\Python\FatAcceptance\NoDups.csv')
+    else:
+        csvIn = pd.read_csv(
+            (r'D:\Python\FatAcceptance\Selected%s.csv', numFile))
     df = csvIn.to_dict('index')
     new = []
+    dupretweets = []
+    labels = []
     for i in range(0, len(df)):
         num_retweets = df[i]['retweets']
+        cleaned = clean(df[i]['text'])
         for _ in range(0, int(num_retweets + 1)):
-            new.append(clean(df[i]['text']))
+            dupretweets.append(cleaned)
+        new.append(cleaned)
+        if not entire:
+            labels.append(df[i]['label'])
     # tokenize, remove stopwords, and lemmatize
-    data_words = list(to_words(new))
-    data_words = list(remove_stopwords(data_words, stop_words))
-    data_words = list(lemmatize(data_words, nlp))
-    with open(r'D:\Python\FatAcceptance\Lemmatized.csv', 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerows(data_words)
+    if not entire:
+        data_words = list(to_words(new))
+        data_words = list(remove_stopwords(data_words, stop_words))
+        data_words = list(lemmatize(data_words, nlp))
+        with open((r'D:\Python\FatAcceptance\Lemmatized%s.csv', numFile), 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(data_words)
+        with open(r'D:\Python\FatAcceptance\Labels.csv', 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(labels)
+    else:
+        data_words = list(to_words(dupretweets))
+        data_words = list(remove_stopwords(data_words, stop_words))
+        data_words = list(lemmatize(data_words, nlp))
+        with open(r'D:\Python\FatAcceptance\LemmatizedDup.csv', 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(data_words)
 
 
 if __name__ == '__main__':
-    main()
+    main(True)

@@ -15,7 +15,7 @@ def remove_hashtag_and_short(text):
     # remove leading and trailing whitespace and merge extra whitespace
     potential = re.sub(r'\s+', ' ', potential).strip()
     tokens = gensim.utils.simple_preprocess(potential, deacc=True)
-    if len(tokens) < 10:
+    if len(tokens) < 5:
         return ''
     return text
 
