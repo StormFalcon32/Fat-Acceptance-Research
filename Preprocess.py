@@ -45,12 +45,13 @@ def main(entire):
     nlp = spacy.load('en', disable=['parser', 'ner'])
     stop_words = set(stopwords.words('english'))
     csvIn = None
-    numFile = 0
+    numFile = 10
+    fileDir = None
     if entire:
-        csvIn = pd.read_csv(r'D:\Python\FatAcceptance\NoDups.csv')
+        fileDir = r'D:\Python\FatAcceptance\Overall\NoDups.csv'
     else:
-        csvIn = pd.read_csv(
-            (r'D:\Python\FatAcceptance\Selected%s.csv', numFile))
+        fileDir = r'D:\Python\FatAcceptance\Training\Selected%s.csv' % numFile
+    csvIn = pd.read_csv(fileDir)
     df = csvIn.to_dict('index')
     new = []
     dupretweets = []
@@ -68,20 +69,20 @@ def main(entire):
         data_words = list(to_words(new))
         data_words = list(remove_stopwords(data_words, stop_words))
         data_words = list(lemmatize(data_words, nlp))
-        with open((r'D:\Python\FatAcceptance\Lemmatized%s.csv', numFile), 'w', newline='') as f:
+        with open(r'D:\Python\FatAcceptance\Training\Lemmatized%s.csv' % numFile, 'w', newline = '') as f:
             writer = csv.writer(f)
             writer.writerows(data_words)
-        with open(r'D:\Python\FatAcceptance\Labels.csv', 'w', newline='') as f:
+        with open(r'D:\Python\FatAcceptance\Training\Labels.csv', 'w', newline = '') as f:
             writer = csv.writer(f)
             writer.writerow(labels)
     else:
         data_words = list(to_words(dupretweets))
         data_words = list(remove_stopwords(data_words, stop_words))
         data_words = list(lemmatize(data_words, nlp))
-        with open(r'D:\Python\FatAcceptance\LemmatizedDup.csv', 'w', newline='') as f:
+        with open(r'D:\Python\FatAcceptance\Overall\LemmatizedDup.csv', 'w', newline = '') as f:
             writer = csv.writer(f)
             writer.writerows(data_words)
 
 
 if __name__ == '__main__':
-    main(True)
+    main(False)
