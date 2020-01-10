@@ -3,7 +3,7 @@ import csv
 
 benlabels = []
 orig = []
-with open(r'D:\Python\FatAcceptance\Selected0Together.csv', encoding='utf-8') as f:
+with open(r'D:\Python\FatAcceptance\Training\Selected1Ben.csv', encoding='utf-8') as f:
     reader = csv.reader(f)
     line = 0
     for row in reader:
@@ -11,9 +11,9 @@ with open(r'D:\Python\FatAcceptance\Selected0Together.csv', encoding='utf-8') as
             line = 1
             continue
         benlabels.append(int(row[7]))
-        orig.append(row)
+        orig.append(row[:-1])
 sadielabels = []
-with open(r'D:\Python\FatAcceptance\Selected0.csv', encoding='utf-8') as f:
+with open(r'D:\Python\FatAcceptance\Training\Selected1Sadie.csv', encoding='utf-8') as f:
     reader = csv.reader(f)
     line = 0
     for row in reader:
@@ -23,14 +23,18 @@ with open(r'D:\Python\FatAcceptance\Selected0.csv', encoding='utf-8') as f:
         sadielabels.append(int(row[7]))
 kappa = cohen_kappa_score(benlabels, sadielabels)
 print(kappa)
-# final = []
-# ind = 0
-# for row in orig:
-#     final.append([int(row[0]), int(row[1]), int(row[2]),
-#                   row[3], benlabels[ind], sadielabels[ind], ""])
-#     ind += 1
-# with open(r'D:\Python\FatAcceptance\Selected1Final.csv', 'w', newline='', encoding='utf-8') as f:
-#     writer = csv.writer(f)
-#     writer.writerow(['num', 'orig_ind', 'id', 'text',
-#                      'label1', 'label2', 'final_label'])
-#     writer.writerows(final)
+ind = 0
+for row in orig:
+    row.append(benlabels[ind])
+    row.append(sadielabels[ind])
+    if benlabels[ind] != sadielabels[ind]:
+        row.append("*")
+    else:
+        row.append("")
+    ind += 1
+with open(r'D:\Python\FatAcceptance\Training\Selected1Final.csv', 'w', newline='', encoding='utf-8') as f:
+    writer = csv.writer(f)
+    writer.writerow(['id', 'user_id', 'date', 'text',
+                         'likes', 'replies', 'retweets',
+                         'label1', 'label2', 'final_label'])
+    writer.writerows(orig)
