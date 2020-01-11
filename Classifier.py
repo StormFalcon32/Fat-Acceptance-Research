@@ -43,23 +43,25 @@ def debugScore(prediction, labels, test_mat, inv):
         writer.writerow(labels)
 
 
-def model_score_df(model_dict):
-    model_name, ac_score_list, p_score_list, r_score_list, f1_score_list = [], [], [], [], []
-    for k, v in model_dict.items():
-        model_name.append(k)
+def model_score_df(models):
+    name = []
+    accuracy = []
+    precision = []
+    recall = []
+    f1 = []
+    for k, v in models.items():
+        name.append(k)
         v.fit(x_train, y_train)
         y_pred = v.predict(x_test)
-        ac_score_list.append(accuracy_score(y_test, y_pred))
-        p_score_list.append(precision_score(y_test, y_pred, average='macro'))
-        r_score_list.append(recall_score(y_test, y_pred, average='macro'))
-        f1_score_list.append(f1_score(y_test, y_pred, average='macro'))
-        model_comparison_df = pd.DataFrame(
-            [model_name, ac_score_list, p_score_list, r_score_list, f1_score_list]).T
-        model_comparison_df.columns = [
-            'model_name', 'accuracy_score', 'precision_score', 'recall_score', 'f1_score']
-        model_comparison_df = model_comparison_df.sort_values(
-            by='f1_score', ascending=False)
-    return model_comparison_df
+        accuracy.append(accuracy_score(y_test, y_pred))
+        precision.append(precision_score(y_test, y_pred, average='macro'))
+        recall.append(recall_score(y_test, y_pred, average='macro'))
+        f1.append(f1_score(y_test, y_pred, average='macro'))
+        compare = pd.DataFrame([name, accuracy, precision, recall, f1])
+        compare = compare.T
+        compare.columns = ['name', 'accuracy', 'precision', 'recall', 'f1']
+        compare = compare.sort_values(by='f1')
+    return compare
 
 
 np.random.seed(1000)
