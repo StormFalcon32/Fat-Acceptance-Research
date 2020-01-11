@@ -5,7 +5,7 @@ import csv
 
 def removePreviousSelected():
     previous = []
-    with open(r'D:\Python\FatAcceptance\Selected0.csv', encoding='utf-8') as f:
+    with open(r'D:\Python\FatAcceptance\Training\Selected1Ben.csv', encoding='utf-8') as f:
         reader = csv.reader(f)
         line = 0
         for row in reader:
@@ -29,15 +29,15 @@ def selectKItems(stream, k, n):
 
 
 def main():
-    csvIn = pd.read_csv(r'D:\Python\FatAcceptance\NoDups.csv')
+    csvIn = pd.read_csv(r'D:\Python\FatAcceptance\Overall\NoDups.csv')
     df = csvIn.to_dict('index')
-    # previous = removePreviousSelected()
+    previous = removePreviousSelected()
     indices = []
     for i in range(0, len(df)):
-        # if df[i]['id'] in previous:
-        #     continue
+        if df[i]['id'] in previous:
+            continue
         indices.append(i)
-    selected_indices = selectKItems(indices, 100, len(indices))
+    selected_indices = selectKItems(indices, 1000, len(indices))
     selected = []
     for i in range(0, len(selected_indices)):
         subselected = []
@@ -45,7 +45,7 @@ def main():
             subselected.append(df[selected_indices[i]][key])
         subselected.append('')
         selected.append(subselected)
-    with open(r'D:\Python\FatAcceptance\Selected1.csv', 'w', newline='', encoding='utf-8') as f:
+    with open(r'D:\Python\FatAcceptance\Training\Selected2.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['id', 'user_id', 'date', 'text',
                          'likes', 'replies', 'retweets', 'label'])
