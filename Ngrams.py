@@ -9,19 +9,24 @@ def make_trigrams(tokenized_sentences, trigram_mod, bigram_mod):
 
 def main():
     data_words = []
-    with open(r'D:\Python\FatAcceptance\Training\Lemmatized10.csv') as f:
+    overall = []
+    with open(r'D:\Python\FatAcceptance\Training\Final\Lemmatized.csv') as f:
         reader = csv.reader(f)
         for row in reader:
             data_words.append(row)
+    with open(r'D:\Python\FatAcceptance\Overall\LemmatizedDup.csv') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            overall.append(row)
     # create bigrams and trigrams
     bigram = gensim.models.Phrases(
-        data_words, scoring='npmi', min_count=10000, threshold=0.2)
+        overall, scoring='npmi', min_count=1000, threshold=0.2)
     trigram = gensim.models.Phrases(
-        bigram[data_words], scoring='npmi', min_count=1000, threshold=0.2)
+        bigram[overall], scoring='npmi', min_count=500, threshold=0.2)
     bigram_mod = gensim.models.phrases.Phraser(bigram)
     trigram_mod = gensim.models.phrases.Phraser(trigram)
     data_words = list(make_trigrams(data_words, trigram_mod, bigram_mod))
-    with open(r'D:\Python\FatAcceptance\Training\Texts10.csv', 'w', newline='') as f:
+    with open(r'D:\Python\FatAcceptance\Training\Final\TrainingTexts.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerows(data_words)
 

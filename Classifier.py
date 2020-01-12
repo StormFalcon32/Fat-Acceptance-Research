@@ -57,22 +57,22 @@ def model_score_df(models):
         precision.append(precision_score(y_test, y_pred, average='macro'))
         recall.append(recall_score(y_test, y_pred, average='macro'))
         f1.append(f1_score(y_test, y_pred, average='macro'))
-        compare = pd.DataFrame([name, accuracy, precision, recall, f1])
-        compare = compare.T
-        compare.columns = ['name', 'accuracy', 'precision', 'recall', 'f1']
-        compare = compare.sort_values(by='f1')
+    compare = pd.DataFrame([name, accuracy, precision, recall, f1])
+    compare = compare.T
+    compare.columns = ['name', 'accuracy', 'precision', 'recall', 'f1']
+    compare = compare.sort_values(by='f1')
     return compare
 
 
-np.random.seed(1000)
+np.random.seed(500)
 
 data_words = []
 labels = []
-with open(r'D:\Python\FatAcceptance\Training\Texts10.csv') as f:
+with open(r'D:\Python\FatAcceptance\Training\Final\TrainingTexts.csv') as f:
     reader = csv.reader(f)
     for row in reader:
         data_words.append(row)
-with open(r'D:\Python\FatAcceptance\Training\Labels.csv') as f:
+with open(r'D:\Python\FatAcceptance\Training\Final\Labels.csv') as f:
     reader = csv.reader(f)
     row = next(reader)
     for j in range(0, len(row)):
