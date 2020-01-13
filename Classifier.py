@@ -80,12 +80,15 @@ with open(r'D:\Python\FatAcceptance\Training\Final\Labels.csv') as f:
 tfidf = TfidfVectorizer(preprocessor=lambda x: x, tokenizer=lambda x: x)
 x = tfidf.fit_transform(data_words)
 inv_vocab = {v: k for k, v in tfidf.vocabulary_.items()}
-lsa = TruncatedSVD(n_components=40, n_iter=100)
+lsa = TruncatedSVD(n_components=100)
 x_reduced = lsa.fit_transform(x)
 x_train, x_test, y_train, y_test = model_selection.train_test_split(
     x, labels, test_size=0.2, stratify=labels)
 cx = sparse.coo_matrix(x_test)
-models = {'Dummy': DummyClassifier(),
+models = {'Stratified': DummyClassifier(strategy='stratified'),
+          'Frequent': DummyClassifier(strategy='most_frequent'),
+          'Prior': DummyClassifier(strategy='prior'),
+          'Uniform': DummyClassifier(strategy='uniform'),
           'SGD': SGDClassifier(loss='log'),
           'RF': RandomForestClassifier(),
           'DT': DecisionTreeClassifier(),
