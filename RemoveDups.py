@@ -24,23 +24,16 @@ def remove_non_ascii(s): return ''.join(i for i in s if ord(i) < 128)
 
 
 def main():
-    data = pd.read_csv(r'D:\Python\FatAcceptance\Raw.csv')
+    data = pd.read_csv(r'D:\Python\FatAcceptance\Overall\Raw.csv')
     data.drop_duplicates(subset=['user_id', 'date'], inplace=True)
     df = data.to_dict('index')
     new = []
     for i in df:
         cleaned = remove_hashtag_and_short(df[i]['text'])
-        subnew = []
         if cleaned:
-            subnew.append(df[i]['id'])
-            subnew.append(df[i]['user_id'])
-            subnew.append(df[i]['date'])
-            subnew.append(cleaned)
-            subnew.append(df[i]['likes'])
-            subnew.append(df[i]['replies'])
-            subnew.append(df[i]['retweets'])
-            new.append(subnew)
-    with open(r'D:\Python\FatAcceptance\NoDups.csv', 'w', newline='', encoding='utf-8') as f:
+            new.append([df[i]['id'], df[i]['user_id'], df[i]['date'],
+                        cleaned, df[i]['likes'], df[i]['replies'], df[i]['retweets']])
+    with open(r'D:\Python\FatAcceptance\Overall\NoDups.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['id', 'user_id', 'date', 'text',
                          'likes', 'replies', 'retweets'])

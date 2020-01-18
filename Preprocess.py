@@ -51,16 +51,18 @@ def main(entire):
         fileDir = r'D:\Python\FatAcceptance\Overall\NoDups.csv'
     else:
         fileDir = r'D:\Python\FatAcceptance\Training\Final\1000Selected%sBen.csv' % numFile
-    csvIn = pd.read_csv(fileDir)
+    csvIn = pd.read_csv(fileDir, encoding='utf-8')
     df = csvIn.to_dict('index')
     new = []
     dupretweets = []
     labels = []
+    uncleaned = []
     for i in range(0, len(df)):
         num_retweets = df[i]['retweets']
         cleaned = clean(df[i]['text'])
         for _ in range(0, int(num_retweets + 1)):
             dupretweets.append(cleaned)
+            uncleaned.append([df[i]['date'], df[i]['text']])
         new.append(cleaned)
         if not entire:
             labels.append(df[i]['label'])
@@ -82,7 +84,11 @@ def main(entire):
         with open(r'D:\Python\FatAcceptance\Overall\LemmatizedDup.csv', 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerows(data_words)
+        with open(r'D:\Python\FatAcceptance\Overall\WithRetweets.csv', 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['date', 'text'])
+            writer.writerows(uncleaned)
 
 
 if __name__ == '__main__':
-    main(False)
+    main(True)
