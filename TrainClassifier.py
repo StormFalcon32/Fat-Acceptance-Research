@@ -2,9 +2,12 @@ import pandas as pd
 import numpy as np
 from scipy import sparse
 import csv
-
-# pickle
 from joblib import dump
+
+# preprocessing
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn import model_selection
 
 # classifiers
 from sklearn.dummy import DummyClassifier
@@ -15,10 +18,9 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 
-# preprocessing
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn import model_selection
+# kfold and pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
 
 # scoring
 from sklearn.metrics import accuracy_score, f1_score
@@ -82,25 +84,39 @@ with open(r'D:\Python\FatAcceptance\Training\Final\Labels.csv') as f:
 tfidf = TfidfVectorizer(preprocessor=lambda x: x, tokenizer=lambda x: x)
 x = tfidf.fit_transform(data_words)
 inv_vocab = {v: k for k, v in tfidf.vocabulary_.items()}
-lsa = TruncatedSVD(n_components=100)
-x = lsa.fit_transform(x)
+# lsa = TruncatedSVD(n_components=100)
+# x = lsa.fit_transform(x)
 x_train, x_test, y_train, y_test = model_selection.train_test_split(
     x, labels, test_size=0.2, stratify=labels)
 cx = sparse.coo_matrix(x_test)
-models = {'Stratified': DummyClassifier(strategy='stratified'),
-          'Frequent': DummyClassifier(strategy='most_frequent'),
-          'Prior': DummyClassifier(strategy='prior'),
-          'Uniform': DummyClassifier(strategy='uniform'),
-          'SGD': SGDClassifier(loss='log'),
-          'RF': RandomForestClassifier(),
-          'DT': DecisionTreeClassifier(),
-          'AB': AdaBoostClassifier(),
-          'KNN': KNeighborsClassifier(),
-          'SVM': SVC(),
-          'LR': LogisticRegression()
-          }
+# models = {'Stratified': DummyClassifier(strategy='stratified'),
+#           'Frequent': DummyClassifier(strategy='most_frequent'),
+#           'Prior': DummyClassifier(strategy='prior'),
+#           'Uniform': DummyClassifier(strategy='uniform'),
+#           'SGD': SGDClassifier(loss='log'),
+#           'RF': RandomForestClassifier(),
+#           'DT': DecisionTreeClassifier(),
+#           'AB': AdaBoostClassifier(),
+#           'KNN': KNeighborsClassifier(),
+#           'SVM': SVC(),
+#           'LR': LogisticRegression()
+#           }
+steps = [('SVD', TruncatedSVD()), ('SVM', SVC())]
+pipeline = Pipeline(steps)
+param_grid = {'SVD__n_components': [50, 100, 500, 1000, 1500, 2000, 2500],
+              'SVM__C': [0.1, 1, 10, 100, 1000],
+              'SVM__gamma': [1, 0.1, 0.01, 0.001, 0.0001, 'scale'],
+              'SVM__kernel': ['rbf', 'linear']
+              }
+grid = GridSearchCV(pipeline,
+                    param_grid,
+                    verbose=3,
+                    cv=5,
+                    scoring='f1_macro'
+                    )
+grid.fit(x_train, y_train)
 svm = SVC()
 svm.fit(x_train, y_train)
-dump(svm, r'D:\Python\FatAcceptance\svm.joblib')
-scores = score_models(models)
-print(scores)
+print(score_models({'Grid': grid.best_estimator_, 'Default': svm}))
+print(grid.best_estimator_)
+dump(grid.best_estimator_, r'D:\Python\FatAcceptance\svm.joblib')
