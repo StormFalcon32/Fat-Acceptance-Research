@@ -1,32 +1,31 @@
-import pandas as pd
+import statistics
 import numpy as np
+import pandas as pd
 from scipy import sparse
-import csv
-from joblib import dump
 
-# preprocessing
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
-from sklearn import model_selection
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-# classifiers
 from sklearn.dummy import DummyClassifier
-from sklearn.linear_model import SGDClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 
-# kfold and pipeline
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
-
-# scoring
 from sklearn.metrics import accuracy_score, f1_score
 
+# io
+import InputOutput as io
+import pickle
+from joblib import dump, load
 
-def debugScore(prediction, labels, test_mat, inv):
+
+def debugScore(prediction, labels, X_test):
+    inv = {v: k for k, v in tfidf.vocabulary_.items()}
+    test_mat = sparse.coo_matrix(X_test)
     correct = 0
     for i in range(0, len(labels)):
         if prediction[i] != labels[i]:
@@ -39,84 +38,81 @@ def debugScore(prediction, labels, test_mat, inv):
     words = [[] for i in range(test_mat.shape[0])]
     for i, j in zip(test_mat.row, test_mat.col):
         words[i].append(inv[j])
-    with open(r'D:\Python\FatAcceptance\Training\TestWords10.csv', 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerows(words)
-    with open(r'D:\Python\FatAcceptance\Training\TestLabels10.csv', 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(labels)
+    io.csvOut(r'Training\TestWords.csv', None, words)
+    io.csvOut(r'Training\TestLabels.csv', None, labels)
 
 
 def score_models(models):
     name = []
     accuracy = []
     f1 = []
-    train = []
+    k_fold = StratifiedKFold(n_splits=5, shuffle=True)
     for k, v in models.items():
         name.append(k)
-        v.fit(x_train, y_train)
-        y_pred = v.predict(x_test)
-        y_pred_train = v.predict(x_train)
-        accuracy.append(accuracy_score(y_true=y_test, y_pred=y_pred))
-        f1.append(f1_score(y_true=y_test, y_pred=y_pred, average='macro'))
-        train.append(
-            f1_score(y_true=y_train, y_pred=y_pred_train, average='macro'))
-    compare = pd.DataFrame([name, accuracy, f1, train])
+        accuracy.append(statistics.mean(
+            cross_val_score(v, X_train, y_train, cv=k_fold, scoring='accuracy')))
+        f1.append(statistics.mean(
+            cross_val_score(v, X_train, y_train, cv=k_fold, scoring='f1_macro')))
+    compare = pd.DataFrame([name, accuracy, f1])
     compare = compare.T
-    compare.columns = ['name', 'accuracy', 'f1', 'train']
+    compare.columns = ['Name', 'Accuracy', 'F1 (macro)']
     compare = compare.sort_values(by='f1')
     return compare
 
 
-np.random.seed(1)
-
-data_words = []
-labels = []
-with open(r'D:\Python\FatAcceptance\Training\Final\TrainingTexts.csv') as f:
-    reader = csv.reader(f)
-    for row in reader:
-        data_words.append(row)
-with open(r'D:\Python\FatAcceptance\Training\Final\Labels.csv') as f:
-    reader = csv.reader(f)
-    row = next(reader)
-    for j in range(0, len(row)):
-        labels.append(int(row[j]))
-tfidf = TfidfVectorizer(preprocessor=lambda x: x, tokenizer=lambda x: x)
-x = tfidf.fit_transform(data_words)
-inv_vocab = {v: k for k, v in tfidf.vocabulary_.items()}
-# lsa = TruncatedSVD(n_components=100)
-# x = lsa.fit_transform(x)
-x_train, x_test, y_train, y_test = model_selection.train_test_split(
-    x, labels, test_size=0.2, stratify=labels)
-cx = sparse.coo_matrix(x_test)
-# models = {'Stratified': DummyClassifier(strategy='stratified'),
-#           'Frequent': DummyClassifier(strategy='most_frequent'),
-#           'Prior': DummyClassifier(strategy='prior'),
-#           'Uniform': DummyClassifier(strategy='uniform'),
-#           'SGD': SGDClassifier(loss='log'),
-#           'RF': RandomForestClassifier(),
-#           'DT': DecisionTreeClassifier(),
-#           'AB': AdaBoostClassifier(),
-#           'KNN': KNeighborsClassifier(),
-#           'SVM': SVC(),
-#           'LR': LogisticRegression()
-#           }
-steps = [('SVD', TruncatedSVD()), ('SVM', SVC())]
-pipeline = Pipeline(steps)
-param_grid = {'SVD__n_components': [50, 100, 500, 1000, 1500, 2000, 2500],
-              'SVM__C': [0.1, 1, 10, 100, 1000],
-              'SVM__gamma': [1, 0.1, 0.01, 0.001, 0.0001, 'scale'],
-              'SVM__kernel': ['rbf', 'linear']
+def select_models():
+    models = {'Stratified': DummyClassifier(strategy='stratified'),
+              'Frequent': DummyClassifier(strategy='most_frequent'),
+              'Prior': DummyClassifier(strategy='prior'),
+              'Uniform': DummyClassifier(strategy='uniform'),
+              'SGD': SGDClassifier(loss='log'),
+              'RF': RandomForestClassifier(),
+              'DT': DecisionTreeClassifier(),
+              'AB': AdaBoostClassifier(),
+              'KNN': KNeighborsClassifier(),
+              'SVM (RBF)': SVC(),
+              'LR': LogisticRegression()
               }
-grid = GridSearchCV(pipeline,
-                    param_grid,
-                    verbose=3,
-                    cv=5,
-                    scoring='f1_macro'
-                    )
-grid.fit(x_train, y_train)
-svm = SVC()
-svm.fit(x_train, y_train)
-print(score_models({'Grid': grid.best_estimator_, 'Default': svm}))
-print(grid.best_estimator_)
-dump(grid.best_estimator_, r'D:\Python\FatAcceptance\svm.joblib')
+    score_models(models).to_csv(
+        r'D:\Python\FatAcceptance\Overall\Models.csv', index=False)
+
+
+def select_hyperparameters():
+    param_grid = {
+        'alpha': [1e-4, 1e-3, 1e-2]
+    }
+    cv = StratifiedKFold(n_splits=5, shuffle=True)
+    grid = GridSearchCV(SGDClassifier(),
+                        param_grid,
+                        verbose=3,
+                        n_jobs=-1,
+                        cv=cv,
+                        scoring='f1_macro',
+                        refit=True
+                        )
+    grid.fit(X_train, y_train)
+    print(grid.best_estimator_)
+    dump(grid.best_estimator_, r'D:\Python\FatAcceptance\model.joblib')
+    print(grid.best_score_)
+    print()
+    score()
+
+
+def score():
+    estimator = load(r'D:\Python\FatAcceptance\model.joblib')
+    pred = estimator.predict(X_test)
+    print(f1_score(y_true=y_test, y_pred=pred, average='macro'))
+    print(accuracy_score(y_true=y_test, y_pred=pred))
+
+
+np.random.seed(100)
+
+data_words = io.csvIn(r'Training\Final\TrainingTexts.csv', False)
+labels = io.csvInSingle(r'Training\Final\Labels.csv')
+vocab = pickle.load(open(r'D:\Python\FatAcceptance\vocab.pkl', 'rb'))
+tfidf = TfidfVectorizer(preprocessor=lambda x: x,
+                        tokenizer=lambda x: x, vocabulary=vocab)
+X = tfidf.fit_transform(data_words)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, labels, test_size=0.2, stratify=labels)
+score()

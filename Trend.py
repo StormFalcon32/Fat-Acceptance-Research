@@ -1,23 +1,17 @@
 import csv
 import pandas as pd
 from datetime import datetime, date, timedelta
+import InputOutput as io
 
 count = 0
-line = 0
-labels = []
-final = []
+labels = io.csvInSingle(r'Overall\Labels.csv')
+final = io.csvIn(r'Overall\WithRetweets.csv', skip_first=True)
 with open(r'D:\Python\FatAcceptance\Overall\Labels.csv') as f:
     reader = csv.reader(f)
     labels = next(reader)
-with open(r'D:\Python\FatAcceptance\Overall\WithRetweets.csv', encoding='utf-8') as f:
-    reader = csv.reader(f)
-    for row in reader:
-        if line == 0:
-            line = 1
-            continue
-        row.append(labels[count])
-        final.append(row)
-        count += 1
+for row in final:
+    row.append(labels[count])
+    count += 1
 df = pd.DataFrame(final, columns=['date', 'text', 'label'])
 df = df.sort_values(by='date')
 df.to_csv(r'D:\Python\FatAcceptance\Overall\Trend.csv', index=False)

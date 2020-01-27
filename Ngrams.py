@@ -1,34 +1,24 @@
 import gensim
 import csv
+import InputOutput as io
 
 
-def make_trigrams(tokenized_sentences, trigram_mod, bigram_mod):
+def make_bigrams(tokenized_sentences, bigram_mod):
     for sentence in tokenized_sentences:
-        yield(trigram_mod[bigram_mod[sentence]])
+        yield(bigram_mod[sentence])
 
 
 def main():
-    data_words = []
-    overall = []
-    with open(r'D:\Python\FatAcceptance\Training\Final\Lemmatized.csv') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            data_words.append(row)
-    with open(r'D:\Python\FatAcceptance\Overall\LemmatizedDup.csv') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            overall.append(row)
-    # create bigrams and trigrams
+    data_words = io.csvIn(r'Training\Final\Lemmatized.csv', skip_first=False)
+    overall = io.csvIn(r'Overall\LemmatizedDup.csv', skip_first=False)
+    # create bigrams
     bigram = gensim.models.Phrases(
-        overall, scoring='npmi', min_count=1000, threshold=0.2)
-    trigram = gensim.models.Phrases(
-        bigram[overall], scoring='npmi', min_count=500, threshold=0.2)
+        overall, scoring='npmi', threshold=0.7)
     bigram_mod = gensim.models.phrases.Phraser(bigram)
-    trigram_mod = gensim.models.phrases.Phraser(trigram)
-    data_words = list(make_trigrams(data_words, trigram_mod, bigram_mod))
-    with open(r'D:\Python\FatAcceptance\Training\Final\TrainingTexts.csv', 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerows(data_words)
+    data_words = list(make_bigrams(data_words, bigram_mod))
+    overall = list(make_bigrams(overall, bigram_mod))
+    io.csvOut(r'Training\Final\TrainingTexts.csv', cols=None, data=data_words)
+    io.csvOut(r'Overall\TextsDup.csv', cols=None, data=overall)
 
 
 if __name__ == '__main__':
