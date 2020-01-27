@@ -74,7 +74,7 @@ def select_models():
               'LR': LogisticRegression()
               }
     score_models(models).to_csv(
-        r'D:\Python\FatAcceptance\Overall\Models.csv', index=False)
+        r'D:\Python\NLP\FatAcceptance\Overall\Models.csv', index=False)
 
 
 def select_hyperparameters():
@@ -92,14 +92,14 @@ def select_hyperparameters():
                         )
     grid.fit(X_train, y_train)
     print(grid.best_estimator_)
-    dump(grid.best_estimator_, r'D:\Python\FatAcceptance\model.joblib')
+    dump(grid.best_estimator_, r'D:\Python\NLP\FatAcceptance\model.joblib')
     print(grid.best_score_)
     print()
     score()
 
 
 def score():
-    estimator = load(r'D:\Python\FatAcceptance\model.joblib')
+    estimator = load(r'D:\Python\NLP\FatAcceptance\model.joblib')
     pred = estimator.predict(X_test)
     print(f1_score(y_true=y_test, y_pred=pred, average='macro'))
     print(accuracy_score(y_true=y_test, y_pred=pred))
@@ -109,7 +109,7 @@ np.random.seed(100)
 
 data_words = io.csvIn(r'Training\Final\TrainingTexts.csv', False)
 labels = io.csvInSingle(r'Training\Final\Labels.csv')
-vocab = pickle.load(open(r'D:\Python\FatAcceptance\vocab.pkl', 'rb'))
+vocab = pickle.load(open(r'D:\Python\NLP\FatAcceptance\vocab.pkl', 'rb'))
 tfidf = TfidfVectorizer(preprocessor=lambda x: x,
                         tokenizer=lambda x: x, vocabulary=vocab)
 X = tfidf.fit_transform(data_words)

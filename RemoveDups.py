@@ -2,6 +2,7 @@ import re
 import pandas as pd
 import gensim
 import csv
+import InputOutput as io
 
 
 def remove_hashtag_and_short(text):
@@ -24,7 +25,7 @@ def remove_non_ascii(s): return ''.join(i for i in s if ord(i) < 128)
 
 
 def main():
-    data = pd.read_csv(r'D:\Python\FatAcceptance\Overall\Raw.csv')
+    data = pd.read_csv(r'D:\Python\NLP\FatAcceptance\Overall\Raw.csv')
     data.drop_duplicates(subset=['user_id', 'date'], inplace=True)
     df = data.to_dict('index')
     new = []
@@ -33,11 +34,8 @@ def main():
         if cleaned:
             new.append([df[i]['id'], df[i]['user_id'], df[i]['date'],
                         cleaned, df[i]['likes'], df[i]['replies'], df[i]['retweets']])
-    with open(r'D:\Python\FatAcceptance\Overall\NoDups.csv', 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(['id', 'user_id', 'date', 'text',
-                         'likes', 'replies', 'retweets'])
-        writer.writerows(new)
+    io.csvOut(r'Overall\NoDups.csv', cols=['id', 'user_id', 'date', 'text',
+                                           'likes', 'replies', 'retweets'], data=new)
 
 
 if __name__ == '__main__':

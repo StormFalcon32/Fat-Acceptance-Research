@@ -47,13 +47,13 @@ _, axes = plt.subplots(1, 1)
 
 X = io.csvIn(r'Training\Final\TrainingTexts.csv', False)
 y = io.csvInSingle(r'Training\Final\Labels.csv')
-vocab = pickle.load(open(r'D:\Python\FatAcceptance\vocab.pkl', 'rb'))
+vocab = pickle.load(open(r'D:\Python\NLP\FatAcceptance\vocab.pkl', 'rb'))
 
 tfidf = TfidfVectorizer(preprocessor=lambda x: x,
                         tokenizer=lambda x: x, vocabulary=vocab)
 X = tfidf.fit_transform(X)
 title = 'Learning Curves'
-estimator = load(r'D:\Python\FatAcceptance\model.joblib')
+estimator = load(r'D:\Python\NLP\FatAcceptance\model.joblib')
 plot_learning_curve(estimator, title, X, y,
                     axes=axes, ylim=(0, 1.01), cv=5)
 plt.show()

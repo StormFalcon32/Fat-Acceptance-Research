@@ -49,9 +49,9 @@ def main(entire):
     csvIn = None
     fileDir = None
     if entire:
-        fileDir = r'D:\Python\FatAcceptance\Overall\NoDups.csv'
+        fileDir = r'D:\Python\NLP\FatAcceptance\Overall\NoDups.csv'
     else:
-        fileDir = r'D:\Python\FatAcceptance\Training\Final\1000Selected0Final.csv'
+        fileDir = r'D:\Python\NLP\FatAcceptance\Training\Final\1000Selected0Final.csv'
     csvIn = pd.read_csv(fileDir, encoding='utf-8')
     df = csvIn.to_dict('index')
     new = []

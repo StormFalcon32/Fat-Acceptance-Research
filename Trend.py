@@ -6,15 +6,12 @@ import InputOutput as io
 count = 0
 labels = io.csvInSingle(r'Overall\Labels.csv')
 final = io.csvIn(r'Overall\WithRetweets.csv', skip_first=True)
-with open(r'D:\Python\FatAcceptance\Overall\Labels.csv') as f:
-    reader = csv.reader(f)
-    labels = next(reader)
 for row in final:
     row.append(labels[count])
     count += 1
 df = pd.DataFrame(final, columns=['date', 'text', 'label'])
 df = df.sort_values(by='date')
-df.to_csv(r'D:\Python\FatAcceptance\Overall\Trend.csv', index=False)
+df.to_csv(r'D:\Python\NLP\FatAcceptance\Overall\Trend.csv', index=False)
 start = date(2010, 1, 1)
 end = start + timedelta(weeks=1)
 weeks = [{'0': 0, '1': 0, '2': 0}]
@@ -40,6 +37,6 @@ for index, row in df.iterrows():
 df_weeks = pd.DataFrame(weeks)
 df_years = pd.DataFrame(years)
 df_weeks.to_csv(
-    r'D:\Python\FatAcceptance\Overall\WeeklyTallies.csv', index=False)
+    r'D:\Python\NLP\FatAcceptance\Overall\WeeklyTallies.csv', index=False)
 df_years.to_csv(
-    r'D:\Python\FatAcceptance\Overall\YearlyTallies.csv', index=False)
+    r'D:\Python\NLP\FatAcceptance\Overall\YearlyTallies.csv', index=False)

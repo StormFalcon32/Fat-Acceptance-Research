@@ -11,11 +11,11 @@ import InputOutput as io
 import pickle
 
 data_words = io.csvIn(r'Overall\TextsDup.csv', False)
-vocab = pickle.load(open(r'D:\Python\FatAcceptance\vocab.pkl', 'rb'))
+vocab = pickle.load(open(r'D:\Python\NLP\FatAcceptance\vocab.pkl', 'rb'))
 tfidf = TfidfVectorizer(preprocessor=lambda x: x,
                         tokenizer=lambda x: x, vocabulary=vocab)
 X = tfidf.fit_transform(data_words)
 labels = []
-estimator = load(r'D:\Python\FatAcceptance\model.joblib')
+estimator = load(r'D:\Python\NLP\FatAcceptance\model.joblib')
 labels = estimator.predict(X).tolist()
 io.csvOutSingle(r'Overall\Labels.csv', labels)

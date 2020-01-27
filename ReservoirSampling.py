@@ -1,11 +1,12 @@
 import random
 import pandas as pd
 import csv
+import InputOutput as io
 
 
 def removePreviousSelected():
     previous = []
-    with open(r'D:\Python\FatAcceptance\Training\Selected1Ben.csv', encoding='utf-8') as f:
+    with open(r'D:\Python\NLP\FatAcceptance\Training\Selected1Ben.csv', encoding='utf-8') as f:
         reader = csv.reader(f)
         line = 0
         for row in reader:
@@ -29,7 +30,7 @@ def selectKItems(stream, k, n):
 
 
 def main():
-    csvIn = pd.read_csv(r'D:\Python\FatAcceptance\Overall\NoDups.csv')
+    csvIn = pd.read_csv(r'D:\Python\NLP\FatAcceptance\Overall\NoDups.csv')
     df = csvIn.to_dict('index')
     previous = removePreviousSelected()
     indices = []
@@ -45,11 +46,8 @@ def main():
             subselected.append(df[selected_indices[i]][key])
         subselected.append('')
         selected.append(subselected)
-    with open(r'D:\Python\FatAcceptance\Training\Selected2.csv', 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(['id', 'user_id', 'date', 'text',
-                         'likes', 'replies', 'retweets', 'label'])
-        writer.writerows(selected)
+    io.csvOut(r'Training\Selected2.csv', cols=['id', 'user_id', 'date', 'text',
+                                               'likes', 'replies', 'retweets', 'label'], data=selected)
 
 
 if __name__ == '__main__':

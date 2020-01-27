@@ -1,9 +1,10 @@
 from sklearn.metrics import cohen_kappa_score
 import csv
+import InputOutput as io
 
 benlabels = []
 orig = []
-with open(r'D:\Python\FatAcceptance\Training\Final\1000Selected0Ben.csv', encoding='utf-8') as f:
+with open(r'D:\Python\NLP\FatAcceptance\Training\Final\1000Selected0Ben.csv', encoding='utf-8') as f:
     reader = csv.reader(f)
     line = 0
     for row in reader:
@@ -13,7 +14,7 @@ with open(r'D:\Python\FatAcceptance\Training\Final\1000Selected0Ben.csv', encodi
         benlabels.append(int(row[7]))
         orig.append(row[:-1])
 sadielabels = []
-with open(r'D:\Python\FatAcceptance\Training\Final\1000Selected0Sadie.csv', encoding='utf-8') as f:
+with open(r'D:\Python\NLP\FatAcceptance\Training\Final\1000Selected0Sadie.csv', encoding='utf-8') as f:
     reader = csv.reader(f)
     line = 0
     for row in reader:
@@ -32,9 +33,7 @@ for row in orig:
     else:
         row.append("")
     ind += 1
-with open(r'D:\Python\FatAcceptance\Training\Final\1000Selected0Final.csv', 'w', newline='', encoding='utf-8') as f:
-    writer = csv.writer(f)
-    writer.writerow(['id', 'user_id', 'date', 'text',
-                     'likes', 'replies', 'retweets',
-                     'label1', 'label2', 'final_label'])
-    writer.writerows(orig)
+io.csvOut(r'Training\Final\1000Selected0Final.csv', cols=[
+          'id', 'user_id', 'date', 'text',
+          'likes', 'replies', 'retweets',
+          'label1', 'label2', 'final_label'], data=orig)

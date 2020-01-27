@@ -2,7 +2,7 @@ import csv
 
 
 def csvOut(file_dir, cols, data):
-    file_dir = r'D:\Python\FatAcceptance\%s' % file_dir
+    file_dir = r'D:\Python\NLP\FatAcceptance\%s' % file_dir
     with open(file_dir, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         if cols != None:
@@ -11,14 +11,14 @@ def csvOut(file_dir, cols, data):
 
 
 def csvOutSingle(file_dir, data):
-    file_dir = r'D:\Python\FatAcceptance\%s' % file_dir
+    file_dir = r'D:\Python\NLP\FatAcceptance\%s' % file_dir
     with open(file_dir, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(data)
 
 
 def csvIn(file_dir, skip_first):
-    file_dir = r'D:\Python\FatAcceptance\%s' % file_dir
+    file_dir = r'D:\Python\NLP\FatAcceptance\%s' % file_dir
     data = []
     with open(file_dir, encoding='utf-8') as f:
         reader = csv.reader(f)
@@ -34,7 +34,7 @@ def csvIn(file_dir, skip_first):
 
 def csvInSingle(file_dir):
     data = []
-    file_dir = r'D:\Python\FatAcceptance\%s' % file_dir
+    file_dir = r'D:\Python\NLP\FatAcceptance\%s' % file_dir
     with open(file_dir, encoding='utf-8') as f:
         reader = csv.reader(f)
         row = next(reader)
