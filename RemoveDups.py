@@ -25,17 +25,15 @@ def remove_non_ascii(s): return ''.join(i for i in s if ord(i) < 128)
 
 
 def main():
-    data = pd.read_csv(r'D:\Python\NLP\FatAcceptance\Overall\Raw.csv')
-    data.drop_duplicates(subset=['user_id', 'date'], inplace=True)
-    df = data.to_dict('index')
+    data = io.csvIn(r'Overall\Raw.csv', skip_first=True)
     new = []
-    for i in df:
-        cleaned = remove_hashtag_and_short(df[i]['text'])
+    num = 0
+    for row in data:
+        cleaned = remove_hashtag_and_short(row[2])
         if cleaned:
-            new.append([df[i]['id'], df[i]['user_id'], df[i]['date'],
-                        cleaned, df[i]['likes'], df[i]['replies'], df[i]['retweets']])
-    io.csvOut(r'Overall\NoDups.csv', cols=['id', 'user_id', 'date', 'text',
-                                           'likes', 'replies', 'retweets'], data=new)
+            new.append(row)
+        num += 1
+    io.csvOut(r'Overall\NoDups.csv', cols=['id', 'date', 'text', 'likes', 'replies', 'retweets', 'is_retweet', 'has_comment', 'user_id', 'user_name', 'user_date', 'bio', 'location', 'lat0', 'long0', 'lat1', 'long1', 'lat2', 'long2', 'lat3', 'long3', 'post_days', 'user_days', 'diff'], data=new)
 
 
 if __name__ == '__main__':

@@ -115,5 +115,4 @@ tfidf = TfidfVectorizer(preprocessor=lambda x: x,
 X = tfidf.fit_transform(data_words)
 X_train, X_test, y_train, y_test = train_test_split(
     X, labels, test_size=0.2, stratify=labels)
-select_models()
 select_hyperparameters()

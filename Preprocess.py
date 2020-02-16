@@ -57,14 +57,11 @@ def main(entire):
     new = []
     dupretweets = []
     labels = []
-    uncleaned = []
     for i in range(0, len(df)):
-        num_retweets = df[i]['retweets']
         cleaned = clean(df[i]['text'])
-        for _ in range(0, int(num_retweets + 1)):
-            dupretweets.append(cleaned)
-            uncleaned.append([df[i]['date'], df[i]['text']])
-        new.append(cleaned)
+        if not df[i]['is_retweet']:
+            new.append(cleaned)
+        dupretweets.append(cleaned)
         if not entire:
             if not math.isnan(df[i]['final_label']):
                 labels.append(int(df[i]['final_label']))
@@ -83,9 +80,7 @@ def main(entire):
         # data_words = list(lemmatize(data_words, nlp))
         io.csvOut(r'Overall\LemmatizedDup.csv',
                   cols=None, data=data_words)
-        io.csvOut(r'Overall\WithRetweets.csv', cols=[
-                  'date', 'text'], data=uncleaned)
 
 
 if __name__ == '__main__':
-    main(False)
+    main(True)
