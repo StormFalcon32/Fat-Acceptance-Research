@@ -12,8 +12,7 @@ import InputOutput as io
 def clean(text):
     text = text.lower()
     # remove URLs
-    text = re.sub(
-        r'([\d\w]+?:\/\/)?([\w\d\.\-]+)(\.\w+)(:\d{1,5})?(\/\S*)?', ' ', text)
+    text = re.sub(r'https?://\S+', ' ', text)
     # remove non ascii characters
     text = remove_non_ascii(text)
     # remove leading and trailing whitespace and merge extra whitespace

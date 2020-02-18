@@ -15,12 +15,15 @@ from sklearn.tree import DecisionTreeClassifier
 
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 
 # io
 import InputOutput as io
 import pickle
 from joblib import dump, load
+
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def debugScore(prediction, labels, X_test):
@@ -103,6 +106,12 @@ def score():
     pred = estimator.predict(X_test)
     print(f1_score(y_true=y_test, y_pred=pred, average='macro'))
     print(accuracy_score(y_true=y_test, y_pred=pred))
+    conf_mat = confusion_matrix(y_test, pred)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    sns.heatmap(conf_mat, annot=True, fmt='d')
+    plt.ylabel('Actual')
+    plt.xlabel('Predicted')
+    plt.show()
 
 
 np.random.seed(100)
