@@ -13,7 +13,7 @@ def main():
     overall = io.csvIn(r'Overall\LemmatizedDup.csv', skip_first=False)
     # create bigrams
     bigram = gensim.models.Phrases(
-        overall, scoring='npmi', threshold=0.7)
+        data_words, scoring='npmi', threshold=0.7)
     bigram_mod = gensim.models.phrases.Phraser(bigram)
     data_words = list(make_bigrams(data_words, bigram_mod))
     overall = list(make_bigrams(overall, bigram_mod))

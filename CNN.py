@@ -1,125 +1,139 @@
-import torch.optim as optim
-import numpy as np
+import math
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-import torch
-import torchvision
-import torchvision.transforms as transforms
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from fastai.text import *
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+from sklearn.model_selection import train_test_split
 
-import torch.nn as nn
-import torch.nn.functional as F
+np.random.seed(100)
 
+def clean(s): return ''.join(i for i in s if ord(i) < 128)
 
-def imshow(img):
-    img = img / 2 + 0.5     # unnormalize
-    npimg = img.numpy()
-    plt.imshow(np.transpose(npimg, (1, 2, 0)))
-    plt.show()
+def score():
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
+    learn = load_learner(path / 'models', 'trained_model.pkl')
 
+    test = pd.read_csv(path / 'test.csv', encoding='utf-8')
+    predictions = []
+    for _, row in test.iterrows():
+        predictions.append(learn.predict(row['text'])[0].obj)
+    test['pred'] = predictions
+    # Output to a text file for comparison with the gold reference
+    test.to_csv(path / 'pred.csv', index=False)
+    pred = test['pred']
+    true = test['final_label']
+    print(f1_score(y_true=true, y_pred=pred, average='macro'))
+    print(accuracy_score(y_true=true, y_pred=pred))
+    conf_mat = confusion_matrix(true, pred)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    sns.heatmap(conf_mat, annot=True, fmt='d')
+    plt.ylabel('Actual')
+    plt.xlabel('Predicted')
+    plt.savefig(path / 'confusion.jpg', dpi=1000, bbox_inches='tight')
 
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+def predict(text):
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
+    learn = load_learner(path / 'models', 'trained_model.pkl')
+    print(learn.predict(text)[0].obj)
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+def predict_LM(text, n_words):
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
+    learn = load_learner(path / 'models', 'LM_model.pkl')
+    print(learn.predict(text, n_words))
 
+def train_model(learning_rates=False):
+    # file directory
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
+    # unlabeled set of ~80K tweetes to train unsupervised language model
+    data_lm = TextLMDataBunch.from_csv(path, 'unlabeled.csv', min_freq=1, bs=16)
+    
+    # language model learner
+    learn = language_model_learner(data_lm, arch=AWD_LSTM, drop_mult=0.5)
+    if learning_rates:
+        # graph learning rates
+        learn.lr_find(start_lr=1e-8, end_lr=1e2)
+        fig1 = learn.recorder.plot(return_fig=True)
+        fig1.savefig(path / 'fig1.jpg', dpi=1000, bbox_inches='tight')
 
-if torch.cuda.is_available():
-    dev = torch.device('cuda')
-    torch.backends.cudnn.benchmark = True
-    torch.backends.cudnn.fastest = True
-else:
-    dev = torch.device('cpu')
+    # Gradual unfreezing of LM
+    learn.freeze()
+    learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
 
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    learn.freeze_to(-2)
+    learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
 
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
-                                          shuffle=True, num_workers=0)
+    learn.freeze_to(-3)
+    learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=4,
-                                         shuffle=False, num_workers=0)
+    learn.unfreeze()
+    learn.fit_one_cycle(cyc_len=8, max_lr=1e-3, moms=(0.8, 0.7))
+    # Save the fine-tuned encoder
+    learn.save_encoder('ft_enc')
+    learn.export(path / 'models' / 'LM_model.pkl')
 
-classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    # Load labeled data for classifier
+    data_clas = TextClasDataBunch.from_csv(path, 'train.csv',
+                vocab=data_lm.train_ds.vocab, min_freq=1, bs=32)
 
-# net = Net().to(dev)
-# criterion = nn.CrossEntropyLoss()
-# optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    # classifier learner
+    learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=0.5)
+    if learning_rates:
+        # graph learning rates
+        learn.load_encoder('ft_enc')
+        learn.freeze()
+        learn.lr_find(start_lr=1e-8, end_lr=1e2)
+        fig2 = learn.recorder.plot(return_fig=True)
+        fig2.savefig(path / 'fig2.jpg', dpi=1000, bbox_inches='tight')
 
-# for epoch in range(2):  # loop over the dataset multiple times
+    # load encoder
+    learn.load_encoder('ft_enc')
+    # gradual unfreezing
+    learn.freeze()
+    learn.fit_one_cycle(cyc_len=1, max_lr=1e-3, moms=(0.8, 0.7))
 
-#     running_loss = 0.0
-#     for i, data in enumerate(trainloader, 0):
-#         # get the inputs; data is a list of [inputs, labels]
-#         inputs, labels = data[0].to(dev), data[1].to(dev)
+    learn.freeze_to(-2)
+    learn.fit_one_cycle(1, slice(1e-4,1e-2), moms=(0.8,0.7))
 
-#         # zero the parameter gradients
-#         optimizer.zero_grad()
+    learn.freeze_to(-3)
+    learn.fit_one_cycle(1, slice(1e-5,5e-3), moms=(0.8,0.7))
 
-#         # forward + backward + optimize
-#         outputs = net(inputs)
-#         loss = criterion(outputs, labels)
-#         loss.backward()
-#         optimizer.step()
-
-#         # print statistics
-#         running_loss += loss.item()
-#         if i % 2000 == 1999:    # print every 2000 mini-batches
-#             print('[%d, %5d] loss: %.3f' %
-#                   (epoch + 1, i + 1, running_loss / 2000))
-#             running_loss = 0.0
-
-# print('Finished Training')
-PATH = './cifar_net.pth'
-# torch.save(net.state_dict(), PATH)
-net = Net().to(dev)
-net.load_state_dict(torch.load(PATH))
-
-correct = 0
-total = 0
-with torch.no_grad():
-    for data in testloader:
-        images, labels = data[0].to(dev), data[1].to(dev)
-        outputs = net(images)
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-print('Accuracy of the network on the 10000 test images: %d %%' % (
-    100 * correct / total))
-
-class_correct = list(0. for i in range(10))
-class_total = list(0. for i in range(10))
-with torch.no_grad():
-    for data in testloader:
-        images, labels = data[0].to(dev), data[1].to(dev)
-        outputs = net(images)
-        _, predicted = torch.max(outputs, 1)
-        c = (predicted == labels).squeeze()
-        for i in range(4):
-            label = labels[i]
-            class_correct[label] += c[i].item()
-            class_total[label] += 1
+    learn.unfreeze()
+    learn.fit_one_cycle(8, slice(1e-5,1e-3), moms=(0.8,0.7))
+    
+    learn.export(path / 'models' / 'trained_model.pkl')
 
 
-for i in range(10):
-    print('Accuracy of %5s : %2d %%' % (
-        classes[i], 100 * class_correct[i] / class_total[i]))
+def load_data(first_time=False):
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
+    path_overall = Path(r'D:/Python/NLP/FatAcceptance/Overall/')
+    labeled_data = pd.read_csv(path / '1000Selected0Final.csv', encoding='utf-8')
+    unlabeled_data = pd.read_csv(path_overall / 'NoDups.csv', encoding='utf-8')
+    if first_time:
+        for i, row in labeled_data.iterrows():
+            if math.isnan(row['final_label']):
+                labeled_data.at[i,'final_label'] = row['label1']
+            else:
+                labeled_data.at[i,'final_label'] = row['final_label']
+        labeled_data.final_label = labeled_data.final_label.astype(int)
+        labeled_data.to_csv(path / '1000Selected0Final.csv', index=False)
+    unlabeled_data['label'] = 0
+    unlabeled_data = pd.concat([unlabeled_data['label'], unlabeled_data['text'].apply(clean)], axis=1)
+    data = pd.concat([labeled_data['final_label'], labeled_data['text'].apply(clean)], axis=1)
+    X_train, X_test, y_train, y_test = train_test_split(data['text'], data['final_label'], test_size=0.2, stratify=data['final_label'])
+    train = pd.concat([y_train, X_train], axis=1)
+    test = pd.concat([y_test, X_test], axis=1)
+    test['pred'] = ''
+    train.to_csv(path / 'train.csv', index=False)
+    test.to_csv(path / 'test.csv', index=False)
+    unlabeled_data.to_csv(path / 'unlabeled.csv', index=False)
+
+
+if __name__ == '__main__':
+    # train_model()
+    # score()
+    predict_LM('fat acceptance is the only movement', 2)
+    predict("Dear #fatshaming #trolls ... Let me save you some time. I KNOW I'M FAT. I'm good with it. #effyourbeautystandards #fatacceptance #JustSayingpic.twitter.com/LIyshWsrLG")

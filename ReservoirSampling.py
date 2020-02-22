@@ -6,12 +6,12 @@ import InputOutput as io
 
 def removePreviousSelected():
     previous = []
-    with open(r'D:\Python\NLP\FatAcceptance\Training\Selected1Ben.csv', encoding='utf-8') as f:
+    with open(r'D:\Python\NLP\FatAcceptance\Training\Final\1000Selected0Final.csv', encoding='utf-8') as f:
         reader = csv.reader(f)
         line = 0
         for row in reader:
             if line != 0:
-                previous.append(int(row[0]))
+                previous.append(row[3])
             line += 1
         return previous
 
@@ -35,7 +35,7 @@ def main():
     previous = removePreviousSelected()
     indices = []
     for i in range(0, len(df)):
-        if df[i]['id'] in previous:
+        if df[i]['text'] in previous:
             continue
         indices.append(i)
     selected_indices = selectKItems(indices, 1000, len(indices))
@@ -46,8 +46,8 @@ def main():
             subselected.append(df[selected_indices[i]][key])
         subselected.append('')
         selected.append(subselected)
-    io.csvOut(r'Training\Selected2.csv', cols=['id', 'user_id', 'date', 'text',
-                                               'likes', 'replies', 'retweets', 'label'], data=selected)
+    io.csvOut(r'Training\1000Selected1.csv', cols=['id', 'user_id', 'date', 'text',
+                                                   'likes', 'replies', 'retweets', 'label'], data=selected)
 
 
 if __name__ == '__main__':
