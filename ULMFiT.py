@@ -29,7 +29,7 @@ def score():
     print(f1_score(y_true=true, y_pred=pred, average='macro'))
     print(accuracy_score(y_true=true, y_pred=pred))
     conf_mat = confusion_matrix(true, pred)
-    fig, ax = plt.subplots(figsize=(10, 10))
+    plt.subplots(figsize=(10, 10))
     sns.heatmap(conf_mat, annot=True, fmt='d')
     plt.ylabel('Actual')
     plt.xlabel('Predicted')
@@ -40,12 +40,12 @@ def predict(text):
     learn = load_learner(path / 'models', 'trained_model.pkl')
     print(learn.predict(text)[0].obj)
 
-def predict_LM(text, n_words):
+def predict_lm(text, n_words):
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
-    learn = load_learner(path / 'models', 'LM_model.pkl')
+    learn = load_learner(path / 'models', 'lm_model.pkl')
     print(learn.predict(text, n_words))
 
-def train_LM(learning_rates=False):
+def train_lm(learning_rates=False):
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
     # unlabeled set of ~80K tweetes to train unsupervised language model
@@ -56,10 +56,10 @@ def train_LM(learning_rates=False):
     if learning_rates:
         # graph learning rates
         learn.lr_find(start_lr=1e-8, end_lr=1e2)
-        fig1 = learn.recorder.plot(return_fig=True)
-        fig1.savefig(path / 'fig1.jpg', dpi=1000, bbox_inches='tight')
+        lr_fig_1 = learn.recorder.plot(return_fig=True)
+        lr_fig_1.savefig(path / 'lr_fig_1.jpg', dpi=1000, bbox_inches='tight')
 
-    # Gradual unfreezing of LM
+    # Gradual unfreezing of lm
     learn.freeze()
     learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
 
@@ -70,35 +70,39 @@ def train_LM(learning_rates=False):
     learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
 
     learn.unfreeze()
-    learn.fit_one_cycle(cyc_len=8, max_lr=1e-3, moms=(0.8, 0.7))
+    learn.fit_one_cycle(cyc_len=10, max_lr=1e-3, moms=(0.8, 0.7))
+    # plot losses
+    losses_lm_fig = learn.recorder.plot_losses(return_fig=True)
+    losses_lm_fig.savefig(path / 'losses_lm_fig.jpg', dpi=1000, bbox_inches='tight')
     # Save the fine-tuned encoder
     learn.save_encoder('ft_enc')
-    learn.export(path / 'models' / 'LM_model.pkl')
+    learn.export(path / 'models' / 'lm_model.pkl')
+    data_lm.save(path / 'models' / 'data_lm.pkl')
 
     
 
-def train_model(learning_rates=False):
+def train_clas(learning_rates=False):
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
     
     # unlabeled set of ~80K tweetes to train unsupervised language model
 
     # Load labeled data for classifier
+    data_lm = load_data(path / 'models', 'data_lm.pkl', bs=16)
     data_clas = TextClasDataBunch.from_csv(path, 'train.csv',
                 vocab=data_lm.train_ds.vocab, min_freq=1, bs=32)
 
     # classifier learner
     learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=0.5)
-    if learning_rates:
-        # graph learning rates
-        learn.load_encoder('ft_enc')
-        learn.freeze()
-        learn.lr_find(start_lr=1e-8, end_lr=1e2)
-        fig2 = learn.recorder.plot(return_fig=True)
-        fig2.savefig(path / 'fig2.jpg', dpi=1000, bbox_inches='tight')
-
     # load encoder
     learn.load_encoder('ft_enc')
+    if learning_rates:
+        # graph learning rates
+        learn.freeze()
+        learn.lr_find(start_lr=1e-8, end_lr=1e2)
+        lr_fig_2 = learn.recorder.plot(return_fig=True)
+        lr_fig_2.savefig(path / 'lr_fig_2.jpg', dpi=1000, bbox_inches='tight')
+
     # gradual unfreezing
     learn.freeze()
     learn.fit_one_cycle(cyc_len=1, max_lr=1e-3, moms=(0.8, 0.7))
@@ -110,12 +114,14 @@ def train_model(learning_rates=False):
     learn.fit_one_cycle(1, slice(1e-5,5e-3), moms=(0.8,0.7))
 
     learn.unfreeze()
-    learn.fit_one_cycle(2, slice(1e-5,1e-3), moms=(0.8,0.7))
-    
+    learn.fit_one_cycle(8, slice(1e-5,1e-3), moms=(0.8,0.7))
+    # plot losses
+    losses_clas_fig = learn.recorder.plot_losses(return_fig=True)
+    losses_clas_fig.savefig(path / 'losses_clas_fig.jpg', dpi=1000, bbox_inches='tight')
     learn.export(path / 'models' / 'trained_model.pkl')
 
 
-def load_data(first_time=False):
+def load_files(first_time=False):
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
     path_overall = Path(r'D:/Python/NLP/FatAcceptance/Overall/')
     labeled_data = pd.read_csv(path / '1000Selected0Final.csv', encoding='utf-8')
@@ -141,8 +147,8 @@ def load_data(first_time=False):
 
 
 if __name__ == '__main__':
-    train_model()
+    train_lm(learning_rates=True)
+    train_clas(learning_rates=True)
     score()
-    predict_LM('fat acceptance is the only movement', 2)
+    predict_lm('fat acceptance is the only movement', 2)
     predict("Dear #fatshaming #trolls ... Let me save you some time. I KNOW I'M FAT. I'm good with it. #effyourbeautystandards #fatacceptance #JustSayingpic.twitter.com/LIyshWsrLG")
-    # save databunch
