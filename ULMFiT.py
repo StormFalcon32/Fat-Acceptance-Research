@@ -45,7 +45,7 @@ def predict_LM(text, n_words):
     learn = load_learner(path / 'models', 'LM_model.pkl')
     print(learn.predict(text, n_words))
 
-def train_model(learning_rates=False):
+def train_LM(learning_rates=False):
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
     # unlabeled set of ~80K tweetes to train unsupervised language model
@@ -75,6 +75,14 @@ def train_model(learning_rates=False):
     learn.save_encoder('ft_enc')
     learn.export(path / 'models' / 'LM_model.pkl')
 
+    
+
+def train_model(learning_rates=False):
+    # file directory
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
+    
+    # unlabeled set of ~80K tweetes to train unsupervised language model
+
     # Load labeled data for classifier
     data_clas = TextClasDataBunch.from_csv(path, 'train.csv',
                 vocab=data_lm.train_ds.vocab, min_freq=1, bs=32)
@@ -102,7 +110,7 @@ def train_model(learning_rates=False):
     learn.fit_one_cycle(1, slice(1e-5,5e-3), moms=(0.8,0.7))
 
     learn.unfreeze()
-    learn.fit_one_cycle(8, slice(1e-5,1e-3), moms=(0.8,0.7))
+    learn.fit_one_cycle(2, slice(1e-5,1e-3), moms=(0.8,0.7))
     
     learn.export(path / 'models' / 'trained_model.pkl')
 
@@ -133,7 +141,8 @@ def load_data(first_time=False):
 
 
 if __name__ == '__main__':
-    # train_model()
-    # score()
+    train_model()
+    score()
     predict_LM('fat acceptance is the only movement', 2)
     predict("Dear #fatshaming #trolls ... Let me save you some time. I KNOW I'M FAT. I'm good with it. #effyourbeautystandards #fatacceptance #JustSayingpic.twitter.com/LIyshWsrLG")
+    # save databunch
