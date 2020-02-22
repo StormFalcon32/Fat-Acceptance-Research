@@ -178,3 +178,4 @@ $RECYCLE.BIN/
 *.lnk
 
 FatAcceptance/Training/Final/models/
+.vscode/
