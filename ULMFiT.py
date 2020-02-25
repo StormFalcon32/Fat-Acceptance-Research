@@ -134,16 +134,16 @@ def train_clas(learning_rates=False):
         lr_fig_2.savefig(path / 'figs' / 'lr_fig_2.jpg', dpi=1000, bbox_inches='tight')
 
     # gradual unfreezing
-    learn.fit_one_cycle(cyc_len=1, max_lr=1e-3, moms=(0.8, 0.7))
+    learn.fit_one_cycle(cyc_len=2, max_lr=1e-3, moms=(0.8, 0.7))
 
     learn.freeze_to(-2)
-    learn.fit_one_cycle(1, slice(1e-2 / (2.6 ** 4), 1e-2), moms=(0.8, 0.7))
+    learn.fit_one_cycle(2, slice(1e-2 / (2.6 ** 4), 1e-2), moms=(0.8, 0.7))
 
     learn.freeze_to(-3)
-    learn.fit_one_cycle(1, slice(5e-3 / (2.6 ** 4), 5e-3), moms=(0.8, 0.7))
+    learn.fit_one_cycle(2, slice(5e-3 / (2.6 ** 4), 5e-3), moms=(0.8, 0.7))
 
     learn.unfreeze()
-    learn.fit_one_cycle(4, slice(1e-3 / (2.6 ** 4), 1e-3), moms=(0.8, 0.7), callbacks=[callbacks.SaveModelCallback(learn, monitor='f1', name='model')])
+    learn.fit_one_cycle(8, slice(1e-3 / (2.6 ** 4), 1e-3), moms=(0.8, 0.7), callbacks=[callbacks.SaveModelCallback(learn, monitor='f1', name='model')])
     # plot losses
     losses_clas_fig = learn.recorder.plot_losses(return_fig=True)
     losses_clas_fig.savefig(path  / 'figs' / 'losses_clas_fig.jpg', dpi=1000, bbox_inches='tight')
