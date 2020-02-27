@@ -43,19 +43,13 @@ def random_seed(seed_value):
 
 def clean(s): return ''.join(i for i in s if ord(i) < 128)
 
-def check_model():
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
-    learn = load_learner(path / 'models', 'trained_model.pkl')
-    print(learn)
-
-def score():
+def score(filename):
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'trained_model.pkl')
 
-    test = pd.read_csv(path / 'test.csv', encoding='utf-8')
-    predictions = []
-    for _, row in test.iterrows():
-        predictions.append(learn.predict(row['text'])[0].obj)
+    test = pd.read_csv(path / filename, encoding='utf-8')
+    learn.data.add_test(test['text'])
+    predictions = learn.get_preds(ds_type=DatasetType.Test)[0].argmax(dim=1)
     test['pred'] = predictions
     # Output to a text file for comparison with the gold reference
     test.to_csv(path / 'pred.csv', index=False)
@@ -94,8 +88,9 @@ def train_lm(learning_rates=False):
         lr_fig_1 = learn.recorder.plot(return_fig=True, suggestion=True)
         lr_fig_1.savefig(path / 'figs' / 'lr_fig_1.jpg', dpi=1000, bbox_inches='tight')
     print(learn.loss_func)
+    random_seed(100)
     # Gradual unfreezing of lm
-    learn.fit_one_cycle(cyc_len=1, max_lr=1e-3, moms=(0.8, 0.7))
+    learn.fit_one_cycle(cyc_len=4, max_lr=1e-3, moms=(0.8, 0.7))
 
     learn.unfreeze()
     learn.fit_one_cycle(cyc_len=8, max_lr=1e-3, moms=(0.8, 0.7), callbacks=[callbacks.SaveModelCallback(learn, monitor='valid_loss', name='lm_model')])
@@ -107,18 +102,15 @@ def train_lm(learning_rates=False):
     learn.export(path / 'models' / 'lm_model.pkl')
     data_lm.save(path / 'models' / 'data_lm.pkl')
 
-
 def train_clas(learning_rates=False):
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     
-    # unlabeled set of ~80K tweets to train unsupervised language model
-
     # Load labeled data for classifier
-    data_lm = load_data(path / 'models', 'data_lm.pkl', num_workers=0)
-    bs = 16
     train = pd.read_csv(path / 'train.csv', encoding='utf-8')
     val = pd.read_csv(path / 'val.csv', encoding='utf-8')
+    data_lm = load_data(path / 'models', 'data_lm.pkl', num_workers=0)
+    bs = 16
     data_clas = TextClasDataBunch.from_df(path, train_df=train, valid_df=val, vocab=data_lm.train_ds.vocab, min_freq=1, bs=bs, num_workers=0)
     # classifier learner
     learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=0.7, wd=0.1, metrics=[accuracy, F1()], pretrained=True)
@@ -132,9 +124,9 @@ def train_clas(learning_rates=False):
         learn.lr_find(start_lr=1e-8, end_lr=1e2)
         lr_fig_2 = learn.recorder.plot(return_fig=True, suggestion=True)
         lr_fig_2.savefig(path / 'figs' / 'lr_fig_2.jpg', dpi=1000, bbox_inches='tight')
-
+    random_seed(100)
     # gradual unfreezing
-    learn.fit_one_cycle(cyc_len=2, max_lr=1e-3, moms=(0.8, 0.7))
+    learn.fit_one_cycle(cyc_len=2, max_lr=5e-2, moms=(0.8, 0.7))
 
     learn.freeze_to(-2)
     learn.fit_one_cycle(2, slice(1e-2 / (2.6 ** 4), 1e-2), moms=(0.8, 0.7))
@@ -182,8 +174,9 @@ if __name__ == '__main__':
     random_seed(100)
     # load_files()
     # train_lm(False)
-    train_clas(False)
-    # check_model()
-    score()
+    # train_clas(False)
+    score('val.csv')
+    # score('test.csv')
     # predict_lm('fat acceptance is the only movement', 2)
-    # predict("Dear #fatshaming #trolls ... Let me save you some time. I KNOW I'M FAT. I'm good with it. #effyourbeautystandards #fatacceptance #JustSayingpic.twitter.com/LIyshWsrLG")
+    predict("Dear #fatshaming #trolls ... Let me save you some time. I KNOW I'M FAT. I'm good with it. #effyourbeautystandards #fatacceptance #JustSayingpic.twitter.com/LIyshWsrLG")
+    predict("It's hee-ere. Strut your multi-tasking game by doing your holiday shopping whilst watching the #ImpeachmentHearings, 'cause the new calendar is here! http://bit.ly/AdipositivityCalendar2020 … #Feminism #Fuckyouism #FatLiberation #FatAcceptance #FatCalendar #BodyPositivity")

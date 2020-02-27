@@ -11,7 +11,7 @@ with open(r'D:\Python\NLP\FatAcceptance\Training\1000Selected1.csv', encoding='u
         if line == 0:
             line = 1
             continue
-        if line == 301:
+        if line == 501:
             break
         benlabels.append(int(row[7]))
         orig.append(row[:-1])
@@ -24,7 +24,7 @@ with open(r'D:\Python\NLP\FatAcceptance\Training\1000Selected1Sadie.csv', encodi
         if line == 0:
             line = 1
             continue
-        if line == 301:
+        if line == 501:
             break
         sadielabels.append(int(row[7]))
         line += 1
