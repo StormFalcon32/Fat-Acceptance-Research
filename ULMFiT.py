@@ -30,7 +30,7 @@ class F1(Callback):
     def on_epoch_end(self, last_metrics, **kwargs):
         return add_metrics(last_metrics, f1_score(self.y_true.cpu(), self.y_pred.cpu(), average='macro'))
 
-def random_seed(seed_value):
+def random_seed(seed_value=1000):
     np.random.seed(seed_value)
     torch.manual_seed(seed_value)
     random.seed(seed_value)
@@ -75,12 +75,14 @@ def predict_lm(text, n_words):
     print(learn.predict(text, n_words))
 
 def train_lm(learning_rates=False):
+    random_seed()
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
-    # unlabeled set of ~80K tweetes to train unsupervised language model
+    # unlabeled set of ~40K tweetes to train unsupervised language model
     data_lm = TextLMDataBunch.from_csv(path, 'unlabeled.csv', min_freq=1, bs=16, num_workers=0)
     # language model learner
-    learn = language_model_learner(data_lm, arch=AWD_LSTM, drop_mult=0.7, wd=0.1, metrics=[accuracy], pretrained=True)
+    learn = language_model_learner(data_lm, arch=AWD_LSTM, drop_mult=0.8, wd=0.1, metrics=[accuracy], pretrained=True)
+    random_seed()
     learn.freeze()
     if learning_rates:
         # graph learning rates
@@ -88,7 +90,6 @@ def train_lm(learning_rates=False):
         lr_fig_1 = learn.recorder.plot(return_fig=True, suggestion=True)
         lr_fig_1.savefig(path / 'figs' / 'lr_fig_1.jpg', dpi=1000, bbox_inches='tight')
     print(learn.loss_func)
-    random_seed(100)
     # Gradual unfreezing of lm
     learn.fit_one_cycle(cyc_len=4, max_lr=1e-3, moms=(0.8, 0.7))
 
@@ -102,20 +103,24 @@ def train_lm(learning_rates=False):
     learn.export(path / 'models' / 'lm_model.pkl')
     data_lm.save(path / 'models' / 'data_lm.pkl')
 
-def train_clas(learning_rates=False):
+def train_clas(learning_rates=False, final_time=False):
+    random_seed()
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     
     # Load labeled data for classifier
     train = pd.read_csv(path / 'train.csv', encoding='utf-8')
     val = pd.read_csv(path / 'val.csv', encoding='utf-8')
+    if final_time:
+        train = pd.concat([train, val])
     data_lm = load_data(path / 'models', 'data_lm.pkl', num_workers=0)
-    bs = 16
+    bs = 8
     data_clas = TextClasDataBunch.from_df(path, train_df=train, valid_df=val, vocab=data_lm.train_ds.vocab, min_freq=1, bs=bs, num_workers=0)
     # classifier learner
-    learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=0.7, wd=0.1, metrics=[accuracy, F1()], pretrained=True)
+    learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=1.5, wd=0.1, metrics=[accuracy, F1()], pretrained=True)
     print(learn.loss_func)
     print(bs)
+    random_seed()
     # load encoder
     learn.load_encoder('ft_enc')
     learn.freeze()
@@ -124,15 +129,14 @@ def train_clas(learning_rates=False):
         learn.lr_find(start_lr=1e-8, end_lr=1e2)
         lr_fig_2 = learn.recorder.plot(return_fig=True, suggestion=True)
         lr_fig_2.savefig(path / 'figs' / 'lr_fig_2.jpg', dpi=1000, bbox_inches='tight')
-    random_seed(100)
     # gradual unfreezing
-    learn.fit_one_cycle(cyc_len=2, max_lr=5e-2, moms=(0.8, 0.7))
+    learn.fit_one_cycle(cyc_len=4, max_lr=2e-2, moms=(0.8, 0.7))
 
     learn.freeze_to(-2)
-    learn.fit_one_cycle(2, slice(1e-2 / (2.6 ** 4), 1e-2), moms=(0.8, 0.7))
+    learn.fit_one_cycle(4, slice(1e-2 / (2.6 ** 4), 1e-2), moms=(0.8, 0.7))
 
     learn.freeze_to(-3)
-    learn.fit_one_cycle(2, slice(5e-3 / (2.6 ** 4), 5e-3), moms=(0.8, 0.7))
+    learn.fit_one_cycle(4, slice(5e-3 / (2.6 ** 4), 5e-3), moms=(0.8, 0.7))
 
     learn.unfreeze()
     learn.fit_one_cycle(8, slice(1e-3 / (2.6 ** 4), 1e-3), moms=(0.8, 0.7), callbacks=[callbacks.SaveModelCallback(learn, monitor='f1', name='model')])
@@ -159,7 +163,7 @@ def load_files(first_time=False):
     unlabeled_data = pd.concat([unlabeled_data['label'], unlabeled_data['text'].apply(clean)], axis=1)
     data = pd.concat([labeled_data['final_label'], labeled_data['text'].apply(clean)], axis=1)
     X_train, X_test, y_train, y_test = train_test_split(data['text'], data['final_label'], test_size=0.3, stratify=data['final_label'])
-    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, stratify=y_test)
+    X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=0.5, stratify=y_test)
     train = pd.concat([y_train, X_train], axis=1)
     test = pd.concat([y_test, X_test], axis=1)
     val = pd.concat([y_val, X_val], axis=1)
@@ -171,12 +175,12 @@ def load_files(first_time=False):
 
 
 if __name__ == '__main__':
-    random_seed(100)
+    random_seed()
     # load_files()
     # train_lm(False)
-    # train_clas(False)
+    train_clas(False, False)
     score('val.csv')
-    # score('test.csv')
-    # predict_lm('fat acceptance is the only movement', 2)
+    score('test.csv')
+    predict_lm('fat acceptance is the only movement', 2)
     predict("Dear #fatshaming #trolls ... Let me save you some time. I KNOW I'M FAT. I'm good with it. #effyourbeautystandards #fatacceptance #JustSayingpic.twitter.com/LIyshWsrLG")
     predict("It's hee-ere. Strut your multi-tasking game by doing your holiday shopping whilst watching the #ImpeachmentHearings, 'cause the new calendar is here! http://bit.ly/AdipositivityCalendar2020 … #Feminism #Fuckyouism #FatLiberation #FatAcceptance #FatCalendar #BodyPositivity")
