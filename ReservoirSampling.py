@@ -30,7 +30,7 @@ def selectKItems(stream, k, n):
 
 
 def main():
-    csvIn = pd.read_csv(r'D:\Python\NLP\FatAcceptance\Overall\NoDups.csv')
+    csvIn = pd.read_csv(r'D:\Python\NLP\FatAcceptance\Overall\WithoutRetweets.csv')
     df = csvIn.to_dict('index')
     previous = removePreviousSelected()
     indices = []

@@ -1,14 +1,12 @@
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
 import pandas as pd
-from datetime import datetime, date, timedelta
+
 import InputOutput as io
 
-count = 0
-labels = io.csvInSingle(r'Overall\Labels.csv')
-final = io.csvIn(r'Overall\NoDups.csv', skip_first=True)
-for row in final:
-    row.append(labels[count])
-    count += 1
-df = pd.DataFrame(final, columns=['id', 'date', 'text', 'likes', 'replies', 'retweets', 'is_retweet', 'has_comment', 'user_id', 'user_name', 'user_date', 'bio', 'location', 'lat0', 'long0', 'lat1', 'long1', 'lat2', 'long2', 'lat3', 'long3', 'post_days', 'user_days', 'diff', 'label'])
+path = Path(r'D:/Python/NLP/FatAcceptance/Overall')
+df = pd.read_csv(path / 'WithRetweets.csv', encoding='utf-8')
 df = df.sort_values(by='date')
 df.to_csv(r'D:\Python\NLP\FatAcceptance\Overall\Trend.csv', index=False)
 start = date(2010, 1, 1)
@@ -19,7 +17,7 @@ start_year = date(2010, 1, 1)
 end_year = date(2011, 1, 1)
 years = [{0: 0, 1: 0, 2: 0}]
 year = 0
-for index, row in df.iterrows():
+for _, row in df.iterrows():
     currdate = datetime.strptime(row['date'], '%Y-%m-%d %H:%M:%S').date()
     if currdate >= end:
         week += 1
@@ -31,9 +29,9 @@ for index, row in df.iterrows():
         start_year = date((2010 + year), 1, 1)
         end_year = date((2010 + year + 1), 1, 1)
         years.append({0: 0, 1: 0, 2: 0})
-    a = row['label']
-    years[year][row['label']] += 1
-    weeks[week][row['label']] += 1
+    a = row['pred']
+    years[year][row['pred']] += 1
+    weeks[week][row['pred']] += 1
 df_weeks = pd.DataFrame(weeks)
 df_years = pd.DataFrame(years)
 df_weeks.to_csv(
