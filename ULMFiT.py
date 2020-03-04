@@ -70,7 +70,7 @@ def score(filename):
     plt.xlabel('Predicted')
     ax.xaxis.set_ticklabels(['Support', 'Oppose', 'Unclear'])
     ax.yaxis.set_ticklabels(['Support', 'Oppose', 'Unclear'])
-    plt.savefig(path / 'confusion.jpg', dpi=1000, bbox_inches='tight')
+    plt.savefig(path / 'figs' / 'confusion.jpg', dpi=1000, bbox_inches='tight')
 
 def use():
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
