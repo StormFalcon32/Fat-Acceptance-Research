@@ -26,3 +26,4 @@ for _, row in df.iterrows():
         curr_name = row['user_name']
 df['number_by_user'] = nums
 df.to_csv(r'D:\Python\NLP\FatAcceptance\Overall\NumTweets.csv', index=False)
+

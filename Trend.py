@@ -34,7 +34,5 @@ for _, row in df.iterrows():
     weeks[week][row['pred']] += 1
 df_weeks = pd.DataFrame(weeks)
 df_years = pd.DataFrame(years)
-df_weeks.to_csv(
-    r'D:\Python\NLP\FatAcceptance\Overall\WeeklyTallies.csv', index=False)
-df_years.to_csv(
-    r'D:\Python\NLP\FatAcceptance\Overall\YearlyTallies.csv', index=False)
+df_weeks.to_csv(path / 'WeeklyTallies.csv', index=False)
+df_years.to_csv(path / 'YearlyTallies.csv', index=False)

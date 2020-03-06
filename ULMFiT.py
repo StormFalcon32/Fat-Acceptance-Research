@@ -1,5 +1,6 @@
 import math
 import warnings
+import webbrowser
 from math import sqrt
 from pathlib import Path
 
@@ -13,7 +14,8 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score)
 from sklearn.model_selection import train_test_split
 
-warnings.filterwarnings('ignore', message='Tensor is int32: upgrading to int64; for better performance use int64 input')
+warnings.filterwarnings('ignore')
+warnings.simplefilter('ignore')
 
 @dataclass
 class F1(Callback):
@@ -83,13 +85,27 @@ def use():
     test.to_csv(path_overall / 'WithRetweets.csv', encoding='utf-8', index=False)
 
 def predict(text):
+    random_seed()
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'trained_model.pkl')
-    print(learn.predict(text)[0].obj)
+    test = pd.DataFrame([text], columns=['text'])
+    learn.data.add_test(test['text'])
+    preds, y, losses = learn.get_preds(ds_type=DatasetType.Test, with_loss=True)
+    classes = ['Support', 'Oppose', 'Unclear']
+    print(classes[preds.argmax(dim=1)[0].tolist()])
+    interp = TextClassificationInterpretation(learn, preds, y, losses)
+    html = interp.html_intrinsic_attention(text)
+    path = os.path.abspath(path / 'interp.html')
+    url = 'file://' + path
+    with open(path, 'w') as f:
+        f.write(html)
+    webbrowser.open(url)
 
 def predict_lm(text, n_words):
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'lm_model.pkl')
+    
+    interp = TextClassificationInterpretation.from_learner(learn)
     print(learn.predict(text, n_words))
 
 def train_lm(learning_rates=False):
@@ -200,8 +216,8 @@ if __name__ == '__main__':
     # score('val.csv')
     # score('test.csv')
     # train_clas(False, True)
-    score('test.csv')
+    # score('test.csv')
     # predict_lm('Those fat acceptance people', 10)
-    # predict("As someone in the fat acceptance movement who has destigmatized the word fat personally, I get using it as a descriptor. But it still was triggering for me anyway, despite the work Ive done for myself.")
-    # predict('"Be yourself" is what every single mom and beta dad tells their son. It is also what fat acceptance bitches want you to think is ok. Bullshit')
+    predict("As someone in the fat acceptance movement who has destigmatized the word fat personally, I get using it as a descriptor. But it still was triggering for me anyway, despite the work Ive done for myself.")
+    predict('"Be yourself" is what every single mom and beta dad tells their son. It is also what fat acceptance bitches want you to think is ok. Bullshit')
     # use()
