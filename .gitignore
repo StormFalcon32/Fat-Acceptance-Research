@@ -177,6 +177,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-models/
-.vscode/
-tweets.json
+FatAcceptance/
