@@ -113,7 +113,7 @@ def train_lm(learning_rates=False):
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     # unlabeled set of ~40K tweetes to train unsupervised language model
-    data_lm = TextLMDataBunch.from_csv(path, 'unlabeled.csv', min_freq=1, bs=16, num_workers=0)
+    data_lm = TextLMDataBunch.from_csv(path, 'unlabeled.csv', min_freq=1, bs=8, num_workers=0)
     # language model learner
     learn = language_model_learner(data_lm, arch=AWD_LSTM, drop_mult=0.8, wd=0.1, metrics=[accuracy], pretrained=True)
     random_seed()
@@ -151,7 +151,7 @@ def train_clas(learning_rates=False, final_time=False):
     bs = 8
     data_clas = TextClasDataBunch.from_df(path, train_df=train, valid_df=val, vocab=data_lm.train_ds.vocab, min_freq=1, bs=bs, num_workers=0)
     # classifier learner
-    learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=1.1, wd=0.1, metrics=[accuracy, F1()], pretrained=True)
+    learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=0.9, wd=0.1, metrics=[accuracy, F1()], pretrained=True)
     print(learn.loss_func)
     print(bs)
     random_seed()
@@ -164,35 +164,27 @@ def train_clas(learning_rates=False, final_time=False):
         lr_fig_2 = learn.recorder.plot(return_fig=True, suggestion=True)
         lr_fig_2.savefig(path / 'figs' / 'lr_fig_2.jpg', dpi=1000, bbox_inches='tight')
     # gradual unfreezing
-    learn.fit_one_cycle(cyc_len=2, max_lr=1e-2, moms=(0.8, 0.7))
+    learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
 
     learn.freeze_to(-2)
-    learn.fit_one_cycle(2, slice(5e-3 / (2.6 ** 4), 5e-3), moms=(0.8, 0.7))
+    learn.fit_one_cycle(1, slice(5e-3 / (2.6 ** 4), 5e-3), moms=(0.8, 0.7))
 
     learn.freeze_to(-3)
-    learn.fit_one_cycle(2, slice(1e-4 / (2.6 ** 4), 1e-4), moms=(0.8, 0.7))
+    learn.fit_one_cycle(1, slice(1e-4 / (2.6 ** 4), 1e-4), moms=(0.8, 0.7))
 
     learn.unfreeze()
-    learn.fit_one_cycle(2, slice(5e-5 / (2.6 ** 4), 5e-5), moms=(0.8, 0.7))
+    learn.fit_one_cycle(4, slice(5e-5 / (2.6 ** 4), 5e-5), moms=(0.8, 0.7))
     # plot losses
     losses_clas_fig = learn.recorder.plot_losses(return_fig=True)
     losses_clas_fig.savefig(path  / 'figs' / 'losses_clas_fig.jpg', dpi=1000, bbox_inches='tight')
     learn.export(path / 'models' / 'trained_model.pkl')
 
 
-def load_files(first_time=False):
+def load_files():
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
     path_overall = Path(r'D:/Python/NLP/FatAcceptance/Overall/')
-    labeled_data = pd.read_csv(path / 'Combined2000Labeled.csv', encoding='utf-8')
+    labeled_data = pd.read_csv(path / 'Labeled.csv', encoding='utf-8')
     unlabeled_data = pd.read_csv(path_overall / 'WithoutRetweets.csv', encoding='utf-8')
-    if first_time:
-        for i, row in labeled_data.iterrows():
-            if math.isnan(row['label']):
-                labeled_data.at[i,'label'] = row['label1']
-            else:
-                labeled_data.at[i,'label'] = row['label']
-        labeled_data.label = labeled_data.label.astype(int)
-        labeled_data.to_csv(path / 'Combined2000Labeled.csv', index=False)
     unlabeled_data['label'] = 0
     unlabeled_data = pd.concat([unlabeled_data['label'], unlabeled_data['text'].apply(clean)], axis=1)
     data = pd.concat([labeled_data['label'], labeled_data['text'].apply(clean)], axis=1)
@@ -206,18 +198,18 @@ def load_files(first_time=False):
     test.to_csv(path /  'ULMFiT' / 'test.csv', index=False)
     val.to_csv(path /  'ULMFiT' / 'val.csv', index=False)
     unlabeled_data.to_csv(path /  'ULMFiT' / 'unlabeled.csv', index=False)
+    print(len(train))
+    print(len(unlabeled_data))
 
 
 if __name__ == '__main__':
     random_seed()
-    # load_files(True)
+    # load_files()
     # train_lm(False)
     # train_clas(False, False)
     # score('val.csv')
     # score('test.csv')
     # train_clas(False, True)
     # score('test.csv')
+    use()
     # predict_lm('Those fat acceptance people', 10)
-    predict("As someone in the fat acceptance movement who has destigmatized the word fat personally, I get using it as a descriptor. But it still was triggering for me anyway, despite the work Ive done for myself.")
-    predict('"Be yourself" is what every single mom and beta dad tells their son. It is also what fat acceptance bitches want you to think is ok. Bullshit')
-    # use()

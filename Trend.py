@@ -8,7 +8,7 @@ import InputOutput as io
 path = Path(r'D:/Python/NLP/FatAcceptance/Overall')
 df = pd.read_csv(path / 'WithRetweets.csv', encoding='utf-8')
 df = df.sort_values(by='date')
-df.to_csv(r'D:\Python\NLP\FatAcceptance\Overall\Trend.csv', index=False)
+df.to_csv(r'D:/Python/NLP/FatAcceptance/Overall/Trend.csv', index=False)
 start = date(2010, 1, 1)
 end = start + timedelta(weeks=1)
 weeks = [{0: 0, 1: 0, 2: 0}]
@@ -29,7 +29,6 @@ for _, row in df.iterrows():
         start_year = date((2010 + year), 1, 1)
         end_year = date((2010 + year + 1), 1, 1)
         years.append({0: 0, 1: 0, 2: 0})
-    a = row['pred']
     years[year][row['pred']] += 1
     weeks[week][row['pred']] += 1
 df_weeks = pd.DataFrame(weeks)

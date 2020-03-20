@@ -178,3 +178,4 @@ $RECYCLE.BIN/
 *.lnk
 
 FatAcceptance/
+.vscode/
