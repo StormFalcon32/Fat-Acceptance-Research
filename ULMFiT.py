@@ -1,4 +1,5 @@
 import math
+import statistics
 import warnings
 import webbrowser
 from math import sqrt
@@ -13,6 +14,7 @@ from fastai.text import *
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score)
 from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
 
 warnings.filterwarnings('ignore')
 warnings.simplefilter('ignore')
@@ -34,7 +36,7 @@ class F1(Callback):
     def on_epoch_end(self, last_metrics, **kwargs):
         return add_metrics(last_metrics, f1_score(self.y_true.cpu(), self.y_pred.cpu(), average='macro'))
 
-def random_seed(seed_value=1000):
+def random_seed(seed_value=100000):
     np.random.seed(seed_value)
     torch.manual_seed(seed_value)
     random.seed(seed_value)
@@ -47,10 +49,9 @@ def random_seed(seed_value=1000):
 
 def clean(s): return ''.join(i for i in s if ord(i) < 128)
 
-def score(filename):
+def score(test):
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'trained_model.pkl')
-    test = pd.read_csv(path / filename, encoding='utf-8')
     learn.data.add_test(test['text'])
     predictions = learn.get_preds(ds_type=DatasetType.Test)[0].argmax(dim=1)
     test['pred'] = predictions
@@ -58,13 +59,10 @@ def score(filename):
     test.to_csv(path / 'pred.csv', index=False)
     pred = test['pred']
     true = test['label']
+    print(accuracy_score(y_true=true, y_pred=pred))
     print(f1_score(y_true=true, y_pred=pred, average='macro'))
     print(precision_score(y_true=true, y_pred=pred, average='macro'))
     print(recall_score(y_true=true, y_pred=pred, average='macro'))
-    acc = accuracy_score(y_true=true, y_pred=pred)
-    print(acc)
-    interval = 1.96 * sqrt((acc * (1 - acc)) / 300)
-    print(interval)
     conf_mat = confusion_matrix(true, pred)
     fig, ax = plt.subplots(figsize=(10, 10))
     sns.heatmap(conf_mat, annot=True, fmt='d')
@@ -73,6 +71,73 @@ def score(filename):
     ax.xaxis.set_ticklabels(['Support', 'Oppose', 'Unclear'])
     ax.yaxis.set_ticklabels(['Support', 'Oppose', 'Unclear'])
     plt.savefig(path / 'figs' / 'confusion.jpg', dpi=1000, bbox_inches='tight')
+
+def create_bootstrap(data):
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    n_iterations = 60
+    train_batched = pd.DataFrame()
+    test_batched = pd.DataFrame()
+    # run bootstrap
+    for i in range(n_iterations):
+        print(i)
+        resampled = resample(data)
+        X_train, X_test, y_train, y_test = train_test_split(resampled['text'], resampled['label'], test_size=0.15, stratify=resampled['label'])
+        train_batched = pd.concat([train_batched, pd.concat([y_train, X_train], axis=1)])
+        test_batched = pd.concat([test_batched, pd.concat([y_test, X_test], axis=1)])
+    train_batched.to_csv(path / 'trainbootstrap.csv', index=False)
+    test_batched.to_csv(path / 'testbootstrap.csv', index=False)
+
+
+def calc_bootstrap(start=0, first_time=True):
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    if first_time:
+        with open(path / 'resample.csv', 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['pred', 'label'])
+    n_iterations = 60
+    train_batched = pd.read_csv(path / 'trainbootstrap.csv', encoding='utf-8')
+    test_batched = pd.read_csv(path / 'testbootstrap.csv', encoding='utf-8')
+    # run bootstrap
+    for i in range(n_iterations):
+        print(i)
+        if i < start:
+            continue
+        train_iter = train_batched.iloc[i * 1700 : (i + 1) * 1700]
+        test_iter = test_batched.iloc[i * 300 : (i + 1) * 300]
+        data_lm = load_data(path / 'models', 'data_lm.pkl', num_workers=0)
+        bs = 8
+        data_clas = TextClasDataBunch.from_df(path, train_df=train_iter, valid_df=test_iter, vocab=data_lm.train_ds.vocab, min_freq=1, bs=bs, num_workers=0)
+        learn = train_clas(data_clas, False, True)
+        learn.data.add_test(test_iter['text'])
+        preds = learn.get_preds(ds_type=DatasetType.Test)[0].argmax(dim=1).tolist()
+        with open(path / 'resample.csv', 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerows(list(zip(preds, test_iter['label'].tolist())))
+
+def score_bootstrap():
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    n_iterations = 60
+    resampled = pd.read_csv(path / 'resample.csv', encoding='utf-8')
+    true = resampled['label']
+    pred = resampled['pred']
+    stats = [[], [], [], []]
+    for i in range(n_iterations):
+        stats[0].append(accuracy_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300]))
+        stats[1].append(f1_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300], average='macro'))
+        stats[2].append(precision_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300], average='macro'))
+        stats[3].append(recall_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300], average='macro'))
+    # plot scores
+    for i in stats:
+        plt.hist(i)
+        plt.show()
+        # confidence intervals
+        alpha = 0.95
+        p = ((1 - alpha) / 2) * 100
+        lower = max(0, np.percentile(i, p))
+        p = (alpha + ((1 - alpha) / 2)) * 100
+        upper = min(1, np.percentile(i, p))
+        print('%.1f confidence interval %.1f%% and %.1f%%' % (alpha * 100, lower * 100, upper * 100))
+        print(statistics.mean(i))
 
 def use():
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
@@ -115,7 +180,7 @@ def train_lm(learning_rates=False):
     # unlabeled set of ~40K tweetes to train unsupervised language model
     data_lm = TextLMDataBunch.from_csv(path, 'unlabeled.csv', min_freq=1, bs=8, num_workers=0)
     # language model learner
-    learn = language_model_learner(data_lm, arch=AWD_LSTM, drop_mult=0.8, wd=0.1, metrics=[accuracy], pretrained=True)
+    learn = language_model_learner(data_lm, arch=AWD_LSTM, drop_mult=0.4, wd=0.1, metrics=[accuracy], pretrained=True)
     random_seed()
     learn.freeze()
     if learning_rates:
@@ -125,10 +190,10 @@ def train_lm(learning_rates=False):
         lr_fig_1.savefig(path / 'figs' / 'lr_fig_1.jpg', dpi=1000, bbox_inches='tight')
     print(learn.loss_func)
         # Gradual unfreezing of lm
-    learn.fit_one_cycle(cyc_len=4, max_lr=1e-3, moms=(0.8, 0.7))
+    learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
 
     learn.unfreeze()
-    learn.fit_one_cycle(cyc_len=8, max_lr=1e-3, moms=(0.8, 0.7), callbacks=[callbacks.SaveModelCallback(learn, monitor='valid_loss', name='lm_model')])
+    learn.fit_one_cycle(cyc_len=10, max_lr=1e-3, moms=(0.8, 0.7), callbacks=[callbacks.SaveModelCallback(learn, monitor='valid_loss', name='lm_model')])
     # plot losses
     losses_lm_fig = learn.recorder.plot_losses(return_fig=True)
     losses_lm_fig.savefig(path / 'figs' / 'losses_lm_fig.jpg', dpi=1000, bbox_inches='tight')
@@ -137,23 +202,14 @@ def train_lm(learning_rates=False):
     learn.export(path / 'models' / 'lm_model.pkl')
     data_lm.save(path / 'models' / 'data_lm.pkl')
 
-def train_clas(learning_rates=False, final_time=False):
+def train_clas(data_clas, learning_rates=False, bootstrap=False):
     random_seed()
     # file directory
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
-    
-    # Load labeled data for classifier
-    train = pd.read_csv(path / 'train.csv', encoding='utf-8')
-    val = pd.read_csv(path / 'val.csv', encoding='utf-8')
-    if final_time:
-        train = pd.concat([train, val])
-    data_lm = load_data(path / 'models', 'data_lm.pkl', num_workers=0)
-    bs = 8
-    data_clas = TextClasDataBunch.from_df(path, train_df=train, valid_df=val, vocab=data_lm.train_ds.vocab, min_freq=1, bs=bs, num_workers=0)
+    # print(data_clas)
     # classifier learner
     learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=0.9, wd=0.1, metrics=[accuracy, F1()], pretrained=True)
     print(learn.loss_func)
-    print(bs)
     random_seed()
     # load encoder
     learn.load_encoder('ft_enc')
@@ -164,20 +220,22 @@ def train_clas(learning_rates=False, final_time=False):
         lr_fig_2 = learn.recorder.plot(return_fig=True, suggestion=True)
         lr_fig_2.savefig(path / 'figs' / 'lr_fig_2.jpg', dpi=1000, bbox_inches='tight')
     # gradual unfreezing
-    learn.fit_one_cycle(cyc_len=1, max_lr=1e-2, moms=(0.8, 0.7))
+    learn.fit_one_cycle(2)
 
     learn.freeze_to(-2)
-    learn.fit_one_cycle(1, slice(5e-3 / (2.6 ** 4), 5e-3), moms=(0.8, 0.7))
+    learn.fit_one_cycle(2)
 
     learn.freeze_to(-3)
-    learn.fit_one_cycle(1, slice(1e-4 / (2.6 ** 4), 1e-4), moms=(0.8, 0.7))
+    learn.fit_one_cycle(2)
 
     learn.unfreeze()
-    learn.fit_one_cycle(4, slice(5e-5 / (2.6 ** 4), 5e-5), moms=(0.8, 0.7))
-    # plot losses
-    losses_clas_fig = learn.recorder.plot_losses(return_fig=True)
-    losses_clas_fig.savefig(path  / 'figs' / 'losses_clas_fig.jpg', dpi=1000, bbox_inches='tight')
-    learn.export(path / 'models' / 'trained_model.pkl')
+    learn.fit_one_cycle(2)
+    if not bootstrap:
+        # plot losses
+        losses_clas_fig = learn.recorder.plot_losses(return_fig=True)
+        losses_clas_fig.savefig(path  / 'figs' / 'losses_clas_fig.jpg', dpi=1000, bbox_inches='tight')
+        learn.export(path / 'models' / 'trained_model.pkl')
+    return learn
 
 
 def load_files():
@@ -203,13 +261,21 @@ def load_files():
 
 
 if __name__ == '__main__':
+    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     random_seed()
-    # load_files()
+    load_files()
     # train_lm(False)
-    # train_clas(False, False)
-    # score('val.csv')
-    # score('test.csv')
-    # train_clas(False, True)
-    # score('test.csv')
-    use()
-    # predict_lm('Those fat acceptance people', 10)
+    train_orig = pd.read_csv(path / 'train.csv', encoding='utf-8')
+    val_orig = pd.read_csv(path / 'val.csv', encoding='utf-8')
+    test_orig = pd.read_csv(path / 'test.csv', encoding='utf-8')
+    # train_combined = pd.concat([train_orig, val_orig])
+    # data_lm = load_data(path / 'models', 'data_lm.pkl', num_workers=0)
+    # bs = 8
+    # data_clas = TextClasDataBunch.from_df(path, train_df=train_combined, valid_df=test_orig, vocab=data_lm.train_ds.vocab, min_freq=1, bs=bs, num_workers=0)
+    # train_clas(data_clas)
+    # score(test_orig)
+    train_combined = pd.concat([train_orig, val_orig, test_orig])
+    create_bootstrap(train_combined)
+    calc_bootstrap()
+    score_bootstrap()
+    # use()

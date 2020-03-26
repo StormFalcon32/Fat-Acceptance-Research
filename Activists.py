@@ -1,29 +1,61 @@
-import InputOutput as io
+import json
+from datetime import date, datetime, timedelta
+from email.utils import parsedate_tz
+from pathlib import Path
+
 import pandas as pd
 
-data = io.csvIn(r'Overall\Trend.csv', skip_first=True)
-user_dict = {}
-for row in data:
-    if row[9] in user_dict:
-        user_dict[row[9]] += 1
-    else:
-        user_dict[row[9]] = 1
-for row in data:
-    row.append(user_dict[row[9]])
 
-df = pd.DataFrame(data, columns=['id', 'date', 'text', 'likes', 'replies', 'retweets', 'is_retweet', 'has_comment', 'user_id', 'user_name', 'user_date', 'bio', 'location', 'lat0', 'long0', 'lat1', 'long1', 'lat2', 'long2', 'lat3', 'long3', 'post_days', 'user_days', 'diff', 'label', 'num_tweets'])
-df = df.sort_values(by=['user_name', 'date'])
-curr_name = ''
+def to_datetime(datestring):
+    time_tuple = parsedate_tz(datestring.strip())
+    dt = datetime(*time_tuple[:6])
+    return dt - timedelta(seconds=time_tuple[-1])
+
+path = Path(r'D:/Python/NLP/FatAcceptance/Overall')
+with open(path / 'tweets.json') as f:
+    json_data = json.load(f)
+df = pd.read_csv(path / 'WithRetweets.csv', encoding='utf-8')
+user_ids = []
+user_dates = []
+for _, row in df.iterrows():
+    user_ids.append(json_data[str(row['num'])]['user']['id'])
+    user_dates.append(to_datetime(json_data[str(row['num'])]['user']['created_at']))
+df['user_id'] = user_ids
+df['user_date'] = user_dates
+user_dict = {}
+for _, row in df.iterrows():
+    if row['user_id'] in user_dict:
+        user_dict[row['user_id']] += 1
+    else:
+        user_dict[row['user_id']] = 1
+user_nums = []
+for _, row in df.iterrows():
+    user_nums.append(user_dict[row['user_id']])
+df['num_tweets'] = user_nums
+df = df.sort_values(by=['user_id', 'date'])
+curr_id = 0
 curr_num = 0
 nums = []
 for _, row in df.iterrows():
-    if row['user_name'] == curr_name:
+    if row['user_id'] == curr_id:
         curr_num += 1
         nums.append(curr_num)
     else:
         nums.append(1)
         curr_num = 1
-        curr_name = row['user_name']
+        curr_name = row['user_id']
 df['number_by_user'] = nums
-df.to_csv(r'D:\Python\NLP\FatAcceptance\Overall\NumTweets.csv', index=False)
-
+start = date(2006, 3, 1)
+days = []
+user_days = []
+post_days = []
+for _, row in df.iterrows():
+    postdate = datetime.strptime(row['date'], '%Y-%m-%d %H:%M:%S').date()
+    userdate = row['user_date'].date()
+    days.append((postdate - userdate).days)
+    user_days.append((userdate - start).days)
+    post_days.append((postdate - start).days)
+df['user_days'] = user_days
+df['post_days'] = post_days
+df['diff'] = days
+df.to_csv(r'D:\Python\NLP\FatAcceptance\Overall\UserAndDates.csv', index=False)

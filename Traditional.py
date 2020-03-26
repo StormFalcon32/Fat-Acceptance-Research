@@ -12,13 +12,15 @@ from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+                             precision_score, recall_score)
 from sklearn.model_selection import (GridSearchCV, StratifiedKFold,
                                      cross_val_score, train_test_split)
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.utils import resample
 
 # io
 import InputOutput as io
@@ -93,7 +95,6 @@ def score():
     plt.xlabel('Predicted')
     plt.show()
 
-
 np.random.seed(1000)
 
 path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
@@ -108,5 +109,6 @@ X_test = tfidf.transform(test['text'])
 y_test = test['label']
 print(X_train.shape)
 print(X_test.shape)
-select_models()
-# select_hyperparameters()
+# select_models()
+calc_bootstrap()
+score_bootstrap()

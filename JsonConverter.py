@@ -44,6 +44,7 @@ for ind in json_data:
         has_hashtag = True
     if (not has_phrase) and (not has_hashtag):
         continue
+    tweet_list[3] = tweet_list[3] + ' xxbio ' + (tweet['user']['description'] if tweet['user']['description'] else '')
     if 'retweeted_status' not in tweet:
         data_without.append(tweet_list)
     data.append(tweet_list)
