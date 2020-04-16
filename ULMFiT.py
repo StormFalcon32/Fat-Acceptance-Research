@@ -79,9 +79,7 @@ def create_bootstrap(data):
     test_batched = pd.DataFrame()
     # run bootstrap
     for i in range(n_iterations):
-        print(i)
-        resampled = resample(data)
-        X_train, X_test, y_train, y_test = train_test_split(resampled['text'], resampled['label'], test_size=0.15, stratify=resampled['label'])
+        X_train, X_test, y_train, y_test = train_test_split(data['text'], data['label'], test_size=0.15, stratify=data['label'])
         train_batched = pd.concat([train_batched, pd.concat([y_train, X_train], axis=1)])
         test_batched = pd.concat([test_batched, pd.concat([y_test, X_test], axis=1)])
     train_batched.to_csv(path / 'trainbootstrap.csv', index=False)

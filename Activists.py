@@ -49,13 +49,25 @@ start = date(2006, 3, 1)
 days = []
 user_days = []
 post_days = []
+tallies = {}
 for _, row in df.iterrows():
     postdate = datetime.strptime(row['date'], '%Y-%m-%d %H:%M:%S').date()
     userdate = row['user_date'].date()
-    days.append((postdate - userdate).days)
+    diff = (postdate - userdate).days
+    days.append(diff)
     user_days.append((userdate - start).days)
     post_days.append((postdate - start).days)
+    diff = int(diff / 365)
+    if diff in tallies:
+        tallies[diff][row['pred']] += 1
+    else:
+        tallies[diff] = {'year': diff, 0: 0, 1: 0, 2: 0}
+        tallies[diff][row['pred']] += 1
+
 df['user_days'] = user_days
 df['post_days'] = post_days
 df['diff'] = days
-df.to_csv(r'D:\Python\NLP\FatAcceptance\Overall\UserAndDates.csv', index=False)
+df_tallies = pd.DataFrame.from_dict(tallies, orient='index')
+df_tallies = df_tallies.sort_values(by='year')
+df.to_csv(path / 'UserAndDates.csv', index=False)
+df_tallies.to_csv(path / 'TenureTallies.csv', index=False)
