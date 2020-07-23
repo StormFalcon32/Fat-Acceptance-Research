@@ -113,29 +113,71 @@ def calc_bootstrap(start=0, first_time=True):
             writer.writerows(list(zip(preds, test_iter['label'].tolist())))
 
 def score_bootstrap():
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     n_iterations = 60
     resampled = pd.read_csv(path / 'resample.csv', encoding='utf-8')
     true = resampled['label']
     pred = resampled['pred']
     stats = [[], [], [], []]
+    support_stats = [[], [], []]
+    oppose_stats = [[], [], []]
+    neutral_stats = [[], [], []]
     for i in range(n_iterations):
-        stats[0].append(accuracy_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300]))
-        stats[1].append(f1_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300], average='macro'))
-        stats[2].append(precision_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300], average='macro'))
-        stats[3].append(recall_score(y_true=true[i * 300 : (i + 1) * 300], y_pred=pred[i * 300 : (i + 1) * 300], average='macro'))
-    # plot scores
+        true_batch = true[i * 300 : (i + 1) * 300]
+        pred_batch = pred[i * 300 : (i + 1) * 300]
+        conf_mat = confusion_matrix(true_batch, pred_batch)
+        true_pos_support = conf_mat[0][0]
+        false_pos_support = conf_mat[1][0] + conf_mat[2][0]
+        false_neg_support = conf_mat[0][1] + conf_mat[0][2]
+        true_pos_oppose = conf_mat[1][1]
+        false_pos_oppose = conf_mat[0][1] + conf_mat[2][1]
+        false_neg_oppose = conf_mat[1][0] + conf_mat[1][2]
+        true_pos_neutral = conf_mat[2][2]
+        false_pos_neutral = conf_mat[0][2] + conf_mat[1][2]
+        false_neg_neutral = conf_mat[2][0] + conf_mat[2][1]
+        precision_support = true_pos_support / (true_pos_support + false_pos_support)
+        recall_support = true_pos_support / (true_pos_support + false_neg_support)
+        f1_support = 2 * precision_support * recall_support / (precision_support + recall_support)
+        precision_oppose = true_pos_oppose / (true_pos_oppose + false_pos_oppose)
+        recall_oppose = true_pos_oppose / (true_pos_oppose + false_neg_oppose)
+        f1_oppose = 2 * precision_oppose * recall_oppose / (precision_oppose + recall_oppose)
+        precision_neutral = true_pos_neutral / (true_pos_neutral + false_pos_neutral)
+        recall_neutral = true_pos_neutral / (true_pos_neutral + false_neg_neutral)
+        f1_neutral = 2 * precision_neutral * recall_neutral / (precision_neutral + recall_neutral)
+        stats[0].append(accuracy_score(y_true=true_batch, y_pred=pred_batch))
+        stats[1].append((precision_support + precision_oppose + precision_neutral) / 3)
+        stats[2].append((recall_support + recall_oppose + recall_neutral) / 3)
+        stats[3].append((f1_support + f1_oppose + f1_neutral) / 3)
+        support_stats[0].append(precision_support)
+        support_stats[1].append(recall_support)
+        support_stats[2].append(f1_support)
+        oppose_stats[0].append(precision_oppose)
+        oppose_stats[1].append(recall_oppose)
+        oppose_stats[2].append(f1_oppose)
+        neutral_stats[0].append(precision_neutral)
+        neutral_stats[1].append(recall_neutral)
+        neutral_stats[2].append(f1_neutral)
     for i in stats:
-        plt.hist(i)
-        plt.show()
-        # confidence intervals
-        alpha = 0.95
-        p = ((1 - alpha) / 2) * 100
-        lower = max(0, np.percentile(i, p))
-        p = (alpha + ((1 - alpha) / 2)) * 100
-        upper = min(1, np.percentile(i, p))
-        print('%.1f confidence interval %.1f%% and %.1f%%' % (alpha * 100, lower * 100, upper * 100))
-        print(statistics.mean(i))
+        plot_distribution(i)
+    for i in support_stats:
+        plot_distribution(i)
+    for i in oppose_stats:
+        plot_distribution(i)
+    for i in neutral_stats:
+        plot_distribution(i)
+    
+
+def plot_distribution(i):
+    plt.hist(i)
+    plt.show()
+    # confidence intervals
+    alpha = 0.95
+    p = ((1 - alpha) / 2) * 100
+    lower = max(0, np.percentile(i, p))
+    p = (alpha + ((1 - alpha) / 2)) * 100
+    upper = min(1, np.percentile(i, p))
+    print('%.1f confidence interval %.1f%% and %.1f%%' % (alpha * 100, lower * 100, upper * 100))
+    print(statistics.mean(i))
 
 def use():
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
@@ -168,7 +210,6 @@ def predict_lm(text, n_words):
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'lm_model.pkl')
     
-    interp = TextClassificationInterpretation.from_learner(learn)
     print(learn.predict(text, n_words))
 
 def train_lm(learning_rates=False):
@@ -261,19 +302,19 @@ def load_files():
 if __name__ == '__main__':
     path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     random_seed()
-    load_files()
+    # load_files()
     # train_lm(False)
-    train_orig = pd.read_csv(path / 'train.csv', encoding='utf-8')
-    val_orig = pd.read_csv(path / 'val.csv', encoding='utf-8')
-    test_orig = pd.read_csv(path / 'test.csv', encoding='utf-8')
+    # train_orig = pd.read_csv(path / 'train.csv', encoding='utf-8')
+    # val_orig = pd.read_csv(path / 'val.csv', encoding='utf-8')
+    # test_orig = pd.read_csv(path / 'test.csv', encoding='utf-8')
     # train_combined = pd.concat([train_orig, val_orig])
     # data_lm = load_data(path / 'models', 'data_lm.pkl', num_workers=0)
     # bs = 8
     # data_clas = TextClasDataBunch.from_df(path, train_df=train_combined, valid_df=test_orig, vocab=data_lm.train_ds.vocab, min_freq=1, bs=bs, num_workers=0)
     # train_clas(data_clas)
     # score(test_orig)
-    train_combined = pd.concat([train_orig, val_orig, test_orig])
-    create_bootstrap(train_combined)
-    calc_bootstrap()
+    # train_combined = pd.concat([train_orig, val_orig, test_orig])
+    # create_bootstrap(train_combined)
+    # calc_bootstrap()
     score_bootstrap()
     # use()
