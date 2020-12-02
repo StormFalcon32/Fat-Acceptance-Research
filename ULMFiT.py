@@ -50,7 +50,7 @@ def random_seed(seed_value=100000):
 def clean(s): return ''.join(i for i in s if ord(i) < 128)
 
 def score(test):
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'trained_model.pkl')
     learn.data.add_test(test['text'])
     predictions = learn.get_preds(ds_type=DatasetType.Test)[0].argmax(dim=1)
@@ -73,7 +73,7 @@ def score(test):
     plt.savefig(path / 'figs' / 'confusion.jpg', dpi=1000, bbox_inches='tight')
 
 def create_bootstrap(data):
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     n_iterations = 60
     train_batched = pd.DataFrame()
     test_batched = pd.DataFrame()
@@ -87,7 +87,7 @@ def create_bootstrap(data):
 
 
 def calc_bootstrap(start=0, first_time=True):
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     if first_time:
         with open(path / 'resample.csv', 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
@@ -145,9 +145,9 @@ def score_bootstrap():
         recall_neutral = true_pos_neutral / (true_pos_neutral + false_neg_neutral)
         f1_neutral = 2 * precision_neutral * recall_neutral / (precision_neutral + recall_neutral)
         stats[0].append(accuracy_score(y_true=true_batch, y_pred=pred_batch))
-        stats[1].append((precision_support + precision_oppose + precision_neutral) / 3)
-        stats[2].append((recall_support + recall_oppose + recall_neutral) / 3)
-        stats[3].append((f1_support + f1_oppose + f1_neutral) / 3)
+        stats[1].append((precision_support + precision_oppose) / 2)
+        stats[2].append((recall_support + recall_oppose) / 2)
+        stats[3].append((f1_support + f1_oppose) / 2)
         support_stats[0].append(precision_support)
         support_stats[1].append(recall_support)
         support_stats[2].append(f1_support)
@@ -169,19 +169,15 @@ def score_bootstrap():
 
 def plot_distribution(i):
     plt.hist(i)
-    plt.show()
     # confidence intervals
-    alpha = 0.95
-    p = ((1 - alpha) / 2) * 100
-    lower = max(0, np.percentile(i, p))
-    p = (alpha + ((1 - alpha) / 2)) * 100
-    upper = min(1, np.percentile(i, p))
-    print('%.1f confidence interval %.1f%% and %.1f%%' % (alpha * 100, lower * 100, upper * 100))
-    print(statistics.mean(i))
+    mean = statistics.mean(i)
+    margin = 1.96 * statistics.stdev(i) / sqrt(60)
+    print('%.2f%% ± %.2f%%' % (mean * 100, margin * 100))
+    # plt.show()
 
 def use():
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
-    path_overall = Path(r'D:/Python/NLP/FatAcceptance/Overall')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path_overall = Path(r'C:/Data/Python/NLP/FatAcceptance/Overall')
     learn = load_learner(path / 'models', 'trained_model.pkl')
     test = pd.read_csv(path_overall / 'WithRetweets.csv', encoding='utf-8')
     learn.data.add_test(test['text'])
@@ -191,7 +187,7 @@ def use():
 
 def predict(text):
     random_seed()
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'trained_model.pkl')
     test = pd.DataFrame([text], columns=['text'])
     learn.data.add_test(test['text'])
@@ -207,7 +203,7 @@ def predict(text):
     webbrowser.open(url)
 
 def predict_lm(text, n_words):
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     learn = load_learner(path / 'models', 'lm_model.pkl')
     
     print(learn.predict(text, n_words))
@@ -215,7 +211,7 @@ def predict_lm(text, n_words):
 def train_lm(learning_rates=False):
     random_seed()
     # file directory
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     # unlabeled set of ~40K tweetes to train unsupervised language model
     data_lm = TextLMDataBunch.from_csv(path, 'unlabeled.csv', min_freq=1, bs=8, num_workers=0)
     # language model learner
@@ -244,7 +240,7 @@ def train_lm(learning_rates=False):
 def train_clas(data_clas, learning_rates=False, bootstrap=False):
     random_seed()
     # file directory
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     # print(data_clas)
     # classifier learner
     learn = text_classifier_learner(data_clas, arch=AWD_LSTM, drop_mult=0.9, wd=0.1, metrics=[accuracy, F1()], pretrained=True)
@@ -278,8 +274,8 @@ def train_clas(data_clas, learning_rates=False, bootstrap=False):
 
 
 def load_files():
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/')
-    path_overall = Path(r'D:/Python/NLP/FatAcceptance/Overall/')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/')
+    path_overall = Path(r'C:/Data/Python/NLP/FatAcceptance/Overall/')
     labeled_data = pd.read_csv(path / 'Labeled.csv', encoding='utf-8')
     unlabeled_data = pd.read_csv(path_overall / 'WithoutRetweets.csv', encoding='utf-8')
     unlabeled_data['label'] = 0
@@ -300,7 +296,7 @@ def load_files():
 
 
 if __name__ == '__main__':
-    path = Path(r'D:/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
+    path = Path(r'C:/Data/Python/NLP/FatAcceptance/Training/Final/ULMFiT')
     random_seed()
     # load_files()
     # train_lm(False)
