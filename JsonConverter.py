@@ -13,7 +13,7 @@ def to_datetime(datestring):
     dt = datetime(*time_tuple[:6])
     return dt - timedelta(seconds=time_tuple[-1])
 
-path = Path(r'D:/Python/NLP/FatAcceptance/Overall')
+path = Path('C:/Data/Python/NLP/FatAcceptance/Overall')
 
 with open(path / 'tweets.json') as f:
     json_data = json.load(f)
@@ -52,5 +52,5 @@ for ind in json_data:
 print(len(data))
 print(len(data_without))
 
-io.csvOut(r'Overall\WithRetweets.csv', cols=['num', 'id', 'date', 'text'], data=data)
-io.csvOut(r'Overall\WithoutRetweets.csv', cols=['num', 'id', 'date', 'text'], data=data_without)
+# io.csvOut(r'Overall\WithRetweets.csv', cols=['num', 'id', 'date', 'text'], data=data)
+# io.csvOut(r'Overall\WithoutRetweets.csv', cols=['num', 'id', 'date', 'text'], data=data_without)
