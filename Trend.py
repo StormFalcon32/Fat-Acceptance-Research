@@ -3,8 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 
-import InputOutput as io
-
 path = Path(r'D:/Python/NLP/FatAcceptance/Overall')
 df = pd.read_csv(path / 'WithRetweets.csv', encoding='utf-8')
 df = df.sort_values(by='date')
