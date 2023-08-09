@@ -1,4 +1,4 @@
-# Body-Positivity-Research
+# Fat-Acceptance-Research
 
 Research looking at the body positivity movement through Twitter, specifically the fat-acceptance sub movement. Used ULMFiT to classify tweets as supporting, opposing, or being neutral towards fat acceptance.
 
